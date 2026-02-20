@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gleaphe Chat - Communication P2P</title>
+    
+    <!-- PeerJS est commenté car non utilisé pour l'instant -->
+    <!-- <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script> -->
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #app {
+            width: 100%;
+            max-width: 480px;
+            height: 100%;
+            background: white;
+            position: relative;
+            border-radius: 20px 20px 0 0;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        /* LOGIN SCREEN */
+        #login-screen {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            background: white;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: bold;
+        }
+
+        .logo p {
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .input-group {
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .input-group input:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+
+        .login-btn:hover {
+            transform: scale(1.02);
+        }
+
+        .permission-note {
+            margin-top: 15px;
+            font-size: 12px;
+            color: #ff4757;
+            text-align: center;
+        }
+
+        /* MAIN SCREEN */
+        #main-screen {
+            height: 100%;
+            display: none;
+            position: relative;
+            background: #f5f5f5;
+        }
+
+        #remote-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #000;
+            display: none; /* Caché car pas d'appels pour l'instant */
+        }
+
+        #local-video {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 100px;
+            height: 150px;
+            object-fit: cover;
+            border: 3px solid white;
+            border-radius: 10px;
+            background: #000;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .top-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(180deg, rgba(0,0,0,0.5), transparent);
+        }
+
+        .online-badge {
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(5px);
+            padding: 8px 15px;
+            border-radius: 20px;
+            color: white;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+
+        .online-dot {
+            width: 8px;
+            height: 8px;
+            background: #4caf50;
+            border-radius: 50%;
+        }
+
+        .menu-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(5px);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .ctrl-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: white;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .ctrl-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .call-btn {
+            background: #ff4757;
+            color: white;
+        }
+
+        .call-btn.active {
+            background: #ff6b81;
+        }
+
+        .test-mode-badge {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff4757;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        /* SIDEBAR */
+        #sidebar {
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 85%;
+            height: 100%;
+            background: white;
+            transition: left 0.3s;
+            z-index: 100;
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 2px 0 20px rgba(0,0,0,0.1);
+        }
+
+        #sidebar.open {
+            left: 0;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 20px;
+            color: #666;
+            cursor: pointer;
+        }
+
+        .profile-section {
+            text-align: center;
+            margin: 40px 0 20px;
+        }
+
+        .avatar {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 32px;
+            margin: 0 auto 10px;
+        }
+
+        .my-id {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+
+        .section {
+            margin: 25px 0;
+        }
+
+        .section h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .user-item {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 10px;
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .user-item:hover {
+            background: #e9ecef;
+        }
+
+        .user-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4caf50;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .user-peer {
+            font-size: 10px;
+            color: #999;
+        }
+
+        .call-input {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .call-input input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .call-input button {
+            padding: 10px 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            z-index: 90;
+        }
+
+        .overlay.active {
+            display: block;
+        }
+
+        .notification {
+            position: absolute;
+            bottom: 100px;
+            left: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            animation: slideUp 0.3s;
+            z-index: 1000;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .chat-messages {
+            position: absolute;
+            bottom: 100px;
+            left: 20px;
+            right: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .message {
+            background: white;
+            padding: 8px 12px;
+            border-radius: 18px;
+            max-width: 80%;
+            align-self: flex-start;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .message.mine {
+            background: #667eea;
+            color: white;
+            align-self: flex-end;
+        }
+
+        .warning-note {
+            background: #fff3cd;
+            color: #856404;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 12px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <!-- LOGIN -->
+    <div id="login-screen">
+        <div class="logo">
+            <h1>Gleaphe</h1>
+            <p>Chat en direct</p>
+        </div>
+        
+        <div class="input-group">
+            <input type="text" id="pseudo" placeholder="Ton pseudo" value="User_" + Math.floor(Math.random()*1000)>
+        </div>
+        
+        <div class="input-group">
+            <select id="gender">
+                <option value="M">👨 Homme</option>
+                <option value="F">👩 Femme</option>
+                <option value="autre">👤 Autre</option>
+            </select>
+        </div>
+        
+        <button class="login-btn" onclick="connect()">
+            Rejoindre Gleaphe Chat
+        </button>
+        
+        <div class="permission-note" id="permissionNote">
+            ⚠️ Autorisez l'accès à la caméra quand le navigateur le demande
+        </div>
+    </div>
+
+    <!-- MAIN -->
+    <div id="main-screen">
+        <div class="test-mode-badge" id="testModeBadge">🔧 MODE TEST - Appels désactivés</div>
+        
+        <div class="top-bar">
+            <div class="menu-btn" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </div>
+            <div class="online-badge" onclick="toggleSidebar()">
+                <span class="online-dot"></span>
+                <span id="online-count">0</span> en ligne
+            </div>
+        </div>
+
+        <video id="remote-video" autoplay playsinline muted></video>
+        <video id="local-video" autoplay playsinline muted></video>
+
+        <div class="chat-messages" id="chat-messages"></div>
+
+        <div class="controls">
+            <div class="ctrl-btn" onclick="toggleAudio()" id="audio-btn">
+                <i class="fas fa-microphone"></i>
+            </div>
+            <div class="ctrl-btn call-btn" onclick="toggleCall()" id="call-btn">
+                <i class="fas fa-phone"></i>
+            </div>
+            <div class="ctrl-btn" onclick="toggleVideo()" id="video-btn">
+                <i class="fas fa-video"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+    <div id="sidebar">
+        <div class="close-btn" onclick="toggleSidebar()">✕</div>
+
+        <div class="profile-section">
+            <div class="avatar" id="avatar">G</div>
+            <div style="font-weight: bold;" id="sidebar-pseudo"></div>
+            <div class="my-id" id="my-id">Chargement...</div>
+            <button onclick="copyId()" style="padding:5px 15px; background:#667eea; color:white; border:none; border-radius:5px; cursor:pointer; margin-top:5px;">
+                📋 Copier mon ID
+            </button>
+        </div>
+
+        <div class="warning-note">
+            ⚠️ Mode test : les appels sont désactivés.<br>
+            Objectif : vérifier la liste des utilisateurs.
+        </div>
+
+        <div class="section">
+            <h3>👥 En ligne (<span id="sidebar-count">0</span>)</h3>
+            <div id="online-users"></div>
+        </div>
+
+        <div class="section">
+            <h3>📞 Appel direct</h3>
+            <div class="call-input">
+                <input type="text" id="call-id" placeholder="ID de l'utilisateur">
+                <button onclick="callId()">Appeler</button>
+            </div>
+            <p style="font-size:10px; color:#999; margin-top:5px;">⚠️ Non fonctionnel en mode test</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ===== CONFIGURATION =====
+    let socket = null;
+    let localStream = null;
+    let currentUser = null;
+    let onlineUsers = [];
+
+    // ===== CONNEXION PRINCIPALE =====
+    async function connect() {
+        const pseudo = document.getElementById('pseudo').value.trim();
+        const gender = document.getElementById('gender').value;
+        
+        if (!pseudo) {
+            alert("Entre un pseudo !");
+            return;
+        }
+
+        try {
+            // === 1. DÉMARRER LA CAMÉRA ===
+            console.log('📷 Démarrage de la caméra...');
+            localStream = await navigator.mediaDevices.getUserMedia({ 
+                video: { width: { ideal: 640 }, height: { ideal: 480 } }, 
+                audio: true 
+            });
+            document.getElementById('local-video').srcObject = localStream;
+            console.log('✅ Caméra démarrée');
+
+            // === 2. GÉNÉRER UN ID LOCAL (SANS PEERJS) ===
+            const peerId = 'user-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now().toString(36);
+            console.log('📋 ID généré localement:', peerId);
+            
+            // Mise à jour de l'interface
+            document.getElementById('my-id').innerText = peerId;
+            document.getElementById('sidebar-pseudo').innerText = pseudo;
+            document.getElementById('avatar').innerText = pseudo.charAt(0).toUpperCase();
+            
+            // Sauvegarde de l'utilisateur
+            currentUser = {
+                peerId: peerId,
+                pseudo: pseudo,
+                gender: gender
+            };
+
+            // === 3. CONNEXION AU SERVEUR SOCKET.IO ===
+            connectToServer();
+            
+            // === 4. AFFICHER L'INTERFACE PRINCIPALE ===
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-screen').style.display = 'block';
+            
+            console.log('🎉 Connecté avec succès!');
+            
+            // === 5. NOTIFICATION POUR LE MODE TEST ===
+            showNotification('Mode test - Vérification de la liste utilisateurs');
+
+        } catch(e) {
+            console.error('❌ Erreur globale:', e);
+            alert('Erreur: ' + e.message);
+        }
+    }
+
+    // ===== CONNEXION AU SERVEUR SOCKET.IO =====
+    function connectToServer() {
+        console.log('📡 Connexion au serveur Socket.IO...');
+        
+        socket = io({
+            transports: ['websocket', 'polling'],
+            reconnection: true,
+            reconnectionAttempts: 10,
+            timeout: 10000
+        });
+
+        socket.on('connect', () => {
+            console.log('✅ Socket.IO connecté, ID:', socket.id);
+            
+            // ENVOYER LES INFORMATIONS UTILISATEUR AU SERVEUR
+            socket.emit('user-connect', {
+                peerId: currentUser.peerId,
+                pseudo: currentUser.pseudo
+            });
+            
+            // Demander la liste des utilisateurs
+            setTimeout(() => {
+                socket.emit('get-users');
+            }, 500);
+            
+            showNotification('Connecté au serveur');
+        });
+
+        socket.on('users-update', (users) => {
+            console.log('📋 Liste reçue du serveur:', users);
+            
+            // Filtrer pour ne pas s'afficher soi-même
+            onlineUsers = users.filter(u => u.peerId !== currentUser.peerId);
+            
+            // Mettre à jour l'interface
+            document.getElementById('online-count').innerText = onlineUsers.length;
+            document.getElementById('sidebar-count').innerText = onlineUsers.length;
+            
+            // Afficher la liste
+            updateOnlineUsers();
+            
+            // Notification si des utilisateurs sont en ligne
+            if (onlineUsers.length > 0) {
+                showNotification(`${onlineUsers.length} utilisateur(s) en ligne`);
+            }
+        });
+
+        socket.on('connect_error', (error) => {
+            console.error('❌ Erreur Socket.IO:', error);
+            showNotification('Erreur de connexion au serveur');
+        });
+
+        socket.on('disconnect', () => {
+            console.log('❌ Socket.IO déconnecté');
+            showNotification('Connexion perdue, reconnexion...');
+        });
+    }
+
+    // ===== AFFICHAGE DE LA LISTE DES UTILISATEURS =====
+    function updateOnlineUsers() {
+        const list = document.getElementById('online-users');
+        
+        if (onlineUsers.length === 0) {
+            list.innerHTML = '<div style="color:#999; padding:10px;">Personne en ligne</div>';
+            return;
+        }
+
+        list.innerHTML = onlineUsers.map(u => `
+            <div class="user-item" onclick="showNotification('Appels désactivés en mode test')">
+                <span class="user-status"></span>
+                <div class="user-info">
+                    <div class="user-name">${u.pseudo}</div>
+                    <div class="user-peer">${u.peerId.substring(0,8)}...</div>
+                </div>
+                <i class="fas fa-phone" style="color:#667eea;"></i>
+            </div>
+        `).join('');
+    }
+
+    // ===== APPELS (DÉSACTIVÉS EN MODE TEST) =====
+    function callUser(peerId) {
+        showNotification('Appels désactivés en mode test');
+    }
+
+    function callId() {
+        showNotification('Appels désactivés en mode test');
+    }
+
+    function toggleCall() {
+        showNotification('Appels désactivés en mode test');
+    }
+
+    // ===== UTILS =====
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('overlay').classList.toggle('active');
+    }
+
+    function copyId() {
+        const id = document.getElementById('my-id').innerText;
+        navigator.clipboard.writeText(id);
+        showNotification('ID copié !');
+    }
+
+    function toggleAudio() {
+        if (localStream) {
+            const enabled = localStream.getAudioTracks()[0].enabled;
+            localStream.getAudioTracks()[0].enabled = !enabled;
+            document.getElementById('audio-btn').style.color = !enabled ? '#667eea' : '#999';
+            showNotification(!enabled ? 'Micro activé' : 'Micro désactivé');
+        }
+    }
+
+    function toggleVideo() {
+        if (localStream) {
+            const enabled = localStream.getVideoTracks()[0].enabled;
+            localStream.getVideoTracks()[0].enabled = !enabled;
+            document.getElementById('video-btn').style.color = !enabled ? '#667eea' : '#999';
+            
+            const localVideo = document.getElementById('local-video');
+            if (!enabled) {
+                localVideo.style.filter = 'grayscale(100%)';
+                showNotification('Caméra désactivée');
+            } else {
+                localVideo.style.filter = 'none';
+                showNotification('Caméra activée');
+            }
+        }
+    }
+
+    function showNotification(message) {
+        const notif = document.createElement('div');
+        notif.className = 'notification';
+        notif.innerText = message;
+        document.getElementById('main-screen').appendChild(notif);
+        setTimeout(() => notif.remove(), 3000);
+    }
+
+    // Test manuel (accessible depuis la console)
+    window.testConnection = function() {
+        if (!currentUser) {
+            alert('Connectez-vous d\'abord');
+            return;
+        }
+        socket.emit('user-connect', {
+            peerId: currentUser.peerId,
+            pseudo: currentUser.pseudo
+        });
+        console.log('✅ Test: envoi manuel effectué');
+    };
+</script>
+</body>
+</html>
