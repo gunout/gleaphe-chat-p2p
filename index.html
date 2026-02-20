@@ -1059,22 +1059,40 @@
         `).join('');
     }
 
-    // ===== CONTACTS =====
-    function addContact() {
-        const name = document.getElementById('newContactName').value.trim();
-        const id = document.getElementById('newContactId').value.trim();
-        if (!name || !id) {
-            alert("Remplissez tous les champs");
-            return;
-        }
-        // À implémenter avec localStorage
-        UI.closeModal('modalAddContact');
-    }
-
-    function copyMyId() {
-        if (currentUser?.peerId) {
-            navigator.clipboard.writeText(currentUser.peerId);
-            showNotification('ID copié !');
+    // ===== BOUTON PRINCIPAL (START/STOP) =====
+    function mainAction() {
+        const btnMain = document.getElementById('btnMain');
+        const btnText = document.getElementById('btnMainText');
+        const icon = btnMain.querySelector('i');
+        
+        // Si on est en mode "ATTENTE" ou "START", on passe en mode "RECHERCHE"
+        if (btnText.innerText === 'ATTENTE' || btnText.innerText === 'START') {
+            btnText.innerText = 'RECHERCHE';
+            icon.className = 'fas fa-spinner fa-pulse';
+            btnMain.style.background = 'radial-gradient(circle, #ffaa00 0%, #ff7700 100%)';
+            
+            // Simuler une recherche (2 secondes)
+            setTimeout(() => {
+                btnText.innerText = 'STOP';
+                icon.className = 'fas fa-stop';
+                btnMain.style.background = 'radial-gradient(circle, #ff3333 0%, #990000 100%)';
+                showNotification('Recherche terminée - En attente d\'appel');
+                
+                // Activer le mode "en ligne"
+                document.getElementById('p2pStatus').innerText = 'RECHERCHE';
+                document.getElementById('p2pStatus').style.color = '#ffaa00';
+            }, 2000);
+            
+        } 
+        // Si on est en mode "STOP" ou "RECHERCHE", on annule
+        else {
+            btnText.innerText = 'ATTENTE';
+            icon.className = 'fas fa-hourglass-half';
+            btnMain.style.background = 'radial-gradient(circle, var(--neon-pink) 0%, #990033 100%)';
+            showNotification('Recherche annulée');
+            
+            document.getElementById('p2pStatus').innerText = 'ONLINE';
+            document.getElementById('p2pStatus').style.color = '#00ff00';
         }
     }
 
@@ -1091,10 +1109,12 @@
                 btn.innerHTML = '<i class="fas fa-video"></i>';
                 btn.classList.remove('camera-off');
                 camOffText.style.display = 'none';
+                showNotification('Caméra activée');
             } else {
                 btn.innerHTML = '<i class="fas fa-video-slash"></i>';
                 btn.classList.add('camera-off');
                 camOffText.style.display = 'block';
+                showNotification('Caméra désactivée');
             }
         }
     }
@@ -1107,15 +1127,13 @@
             const btn = document.getElementById('btnMic');
             btn.style.color = isMicOn ? '#fff' : 'var(--neon-pink)';
             btn.innerHTML = isMicOn ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
+            showNotification(isMicOn ? 'Micro activé' : 'Micro désactivé');
         }
-    }
-
-    function mainAction() {
-        // Mode attente (pas d'appels pour l'instant)
     }
 
     function sendGift() {
         spawnEffect();
+        showNotification('✨ Cadeau envoyé !');
     }
 
     function sendMessage() {
@@ -1125,6 +1143,41 @@
             addMessage(text, true);
             input.value = '';
             UI.toggleChat(false);
+            
+            // Simuler une réponse (si en mode recherche)
+            if (document.getElementById('btnMainText').innerText === 'RECHERCHE') {
+                setTimeout(() => {
+                    const reponses = ['Salut !', 'Ça va ?', 'Tu cherches quelqu\'un ?', '👋', '👍'];
+                    const reponse = reponses[Math.floor(Math.random() * reponses.length)];
+                    addMessage(reponse, false);
+                }, 1500);
+            }
+        }
+    }
+
+    // ===== CONTACTS =====
+    function addContact() {
+        const name = document.getElementById('newContactName').value.trim();
+        const id = document.getElementById('newContactId').value.trim();
+        if (!name || !id) {
+            alert("Remplissez tous les champs");
+            return;
+        }
+        
+        let contacts = JSON.parse(localStorage.getItem('gleaphe_contacts') || '[]');
+        contacts.push({ name, id });
+        localStorage.setItem('gleaphe_contacts', JSON.stringify(contacts));
+        
+        UI.closeModal('modalAddContact');
+        document.getElementById('newContactName').value = '';
+        document.getElementById('newContactId').value = '';
+        showNotification('Contact ajouté !');
+    }
+
+    function copyMyId() {
+        if (currentUser?.peerId) {
+            navigator.clipboard.writeText(currentUser.peerId);
+            showNotification('✅ ID copié !');
         }
     }
 
@@ -1160,7 +1213,7 @@
         }
     };
 
-    // ===== UTILS =====
+    // ===== NOTIFICATIONS ET EFFETS =====
     function showNotification(message) {
         const notif = document.createElement('div');
         notif.style.position = 'absolute';
@@ -1172,6 +1225,7 @@
         notif.style.padding = '10px';
         notif.style.color = '#fff';
         notif.style.zIndex = '1000';
+        notif.style.borderRadius = '5px';
         notif.style.animation = 'slideUp 0.3s';
         notif.innerText = message;
         document.getElementById('main-screen').appendChild(notif);
@@ -1190,13 +1244,17 @@
 
     function spawnEffect() {
         const stage = document.getElementById('videoStage');
-        const icon = document.createElement('div');
-        icon.className = 'floating-icon';
-        icon.innerHTML = '<i class="fas fa-biohazard"></i>';
-        icon.style.left = Math.random() * 80 + 10 + '%';
-        icon.style.top = '50%';
-        stage.appendChild(icon);
-        setTimeout(() => icon.remove(), 1000);
+        for (let i = 0; i < 3; i++) {
+            setTimeout(() => {
+                const icon = document.createElement('div');
+                icon.className = 'floating-icon';
+                icon.innerHTML = '<i class="fas fa-biohazard"></i>';
+                icon.style.left = Math.random() * 80 + 10 + '%';
+                icon.style.top = '50%';
+                stage.appendChild(icon);
+                setTimeout(() => icon.remove(), 1000);
+            }, i * 100);
+        }
     }
 
     // Horloge
@@ -1211,7 +1269,14 @@
         if (savedPseudo) {
             document.getElementById('loginPseudo').value = savedPseudo;
         }
+        
+        // Charger les contacts
+        const savedContacts = localStorage.getItem('gleaphe_contacts');
+        if (savedContacts) {
+            try {
+                const contacts = JSON.parse(savedContacts);
+                // Afficher les contacts si nécessaire
+            } catch(e) {}
+        }
     };
 </script>
-</body>
-</html>
