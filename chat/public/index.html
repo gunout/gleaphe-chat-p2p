@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Gleaphe Chat - Communication P2P</title>
     
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <!-- PeerJS est commenté car non utilisé pour l'instant -->
+    <!-- <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script> -->
     <script src="/socket.io/socket.io.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -102,6 +103,13 @@
             transform: scale(1.02);
         }
 
+        .permission-note {
+            margin-top: 15px;
+            font-size: 12px;
+            color: #ff4757;
+            text-align: center;
+        }
+
         /* MAIN SCREEN */
         #main-screen {
             height: 100%;
@@ -115,6 +123,7 @@
             height: 100%;
             object-fit: cover;
             background: #000;
+            display: none; /* Caché car pas d'appels pour l'instant */
         }
 
         #local-video {
@@ -210,6 +219,21 @@
 
         .call-btn.active {
             background: #ff6b81;
+        }
+
+        .test-mode-badge {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff4757;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
 
         /* SIDEBAR */
@@ -395,6 +419,16 @@
             color: white;
             align-self: flex-end;
         }
+
+        .warning-note {
+            background: #fff3cd;
+            color: #856404;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 12px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -422,13 +456,15 @@
             Rejoindre Gleaphe Chat
         </button>
         
-        <p style="margin-top:20px; color:#999; font-size:12px;">
-            ⚡ Connexion sécurisée • P2P direct
-        </p>
+        <div class="permission-note" id="permissionNote">
+            ⚠️ Autorisez l'accès à la caméra quand le navigateur le demande
+        </div>
     </div>
 
     <!-- MAIN -->
     <div id="main-screen">
+        <div class="test-mode-badge" id="testModeBadge">🔧 MODE TEST - Appels désactivés</div>
+        
         <div class="top-bar">
             <div class="menu-btn" onclick="toggleSidebar()">
                 <i class="fas fa-bars"></i>
@@ -439,7 +475,7 @@
             </div>
         </div>
 
-        <video id="remote-video" autoplay playsinline></video>
+        <video id="remote-video" autoplay playsinline muted></video>
         <video id="local-video" autoplay playsinline muted></video>
 
         <div class="chat-messages" id="chat-messages"></div>
@@ -471,6 +507,11 @@
             </button>
         </div>
 
+        <div class="warning-note">
+            ⚠️ Mode test : les appels sont désactivés.<br>
+            Objectif : vérifier la liste des utilisateurs.
+        </div>
+
         <div class="section">
             <h3>👥 En ligne (<span id="sidebar-count">0</span>)</h3>
             <div id="online-users"></div>
@@ -482,16 +523,15 @@
                 <input type="text" id="call-id" placeholder="ID de l'utilisateur">
                 <button onclick="callId()">Appeler</button>
             </div>
+            <p style="font-size:10px; color:#999; margin-top:5px;">⚠️ Non fonctionnel en mode test</p>
         </div>
     </div>
 </div>
 
 <script>
     // ===== CONFIGURATION =====
-    let peer = null;
     let socket = null;
     let localStream = null;
-    let currentCall = null;
     let currentUser = null;
     let onlineUsers = [];
 
@@ -515,60 +555,33 @@
             document.getElementById('local-video').srcObject = localStream;
             console.log('✅ Caméra démarrée');
 
-            // Configuration PeerJS avec serveur alternatif
-            peer = new Peer({
-            host: 'peerjs-server.herokuapp.com',  // Serveur alternatif
-            port: 443,
-            path: '/',
-            secure: true,
-            debug: 3,
-            config: {
-                iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:stun2.l.google.com:19302' },
-            { urls: 'stun:stun3.l.google.com:19302' },
-            { urls: 'stun:stun4.l.google.com:19302' }
-        ]
-    }
-});
+            // === 2. GÉNÉRER UN ID LOCAL (SANS PEERJS) ===
+            const peerId = 'user-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now().toString(36);
+            console.log('📋 ID généré localement:', peerId);
+            
+            // Mise à jour de l'interface
+            document.getElementById('my-id').innerText = peerId;
+            document.getElementById('sidebar-pseudo').innerText = pseudo;
+            document.getElementById('avatar').innerText = pseudo.charAt(0).toUpperCase();
+            
+            // Sauvegarde de l'utilisateur
+            currentUser = {
+                peerId: peerId,
+                pseudo: pseudo,
+                gender: gender
+            };
 
-            peer.on('open', (peerId) => {
-                console.log('✅ PeerJS connecté, ID:', peerId);
-                
-                // Mise à jour de l'interface
-                document.getElementById('my-id').innerText = peerId;
-                document.getElementById('sidebar-pseudo').innerText = pseudo;
-                document.getElementById('avatar').innerText = pseudo.charAt(0).toUpperCase();
-                
-                // Sauvegarde de l'utilisateur
-                currentUser = {
-                    peerId: peerId,
-                    pseudo: pseudo,
-                    gender: gender
-                };
-
-                // === 3. CONNEXION AU SERVEUR SOCKET.IO ===
-                connectToServer();
-                
-                // === 4. AFFICHER L'INTERFACE PRINCIPALE ===
-                document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('main-screen').style.display = 'block';
-                
-                console.log('🎉 Connecté avec succès!');
-            });
-
-            peer.on('error', (err) => {
-                console.error('❌ Erreur PeerJS:', err);
-                showNotification('Erreur PeerJS: ' + err.type);
-            });
-
-            peer.on('call', (call) => {
-                if (confirm(`📞 Appel entrant de ${call.peer}`)) {
-                    call.answer(localStream);
-                    setupCall(call);
-                }
-            });
+            // === 3. CONNEXION AU SERVEUR SOCKET.IO ===
+            connectToServer();
+            
+            // === 4. AFFICHER L'INTERFACE PRINCIPALE ===
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-screen').style.display = 'block';
+            
+            console.log('🎉 Connecté avec succès!');
+            
+            // === 5. NOTIFICATION POUR LE MODE TEST ===
+            showNotification('Mode test - Vérification de la liste utilisateurs');
 
         } catch(e) {
             console.error('❌ Erreur globale:', e);
@@ -644,7 +657,7 @@
         }
 
         list.innerHTML = onlineUsers.map(u => `
-            <div class="user-item" onclick="callUser('${u.peerId}')">
+            <div class="user-item" onclick="showNotification('Appels désactivés en mode test')">
                 <span class="user-status"></span>
                 <div class="user-info">
                     <div class="user-name">${u.pseudo}</div>
@@ -655,56 +668,17 @@
         `).join('');
     }
 
-    // ===== APPELS =====
+    // ===== APPELS (DÉSACTIVÉS EN MODE TEST) =====
     function callUser(peerId) {
-        if (!peer) {
-            showNotification('PeerJS pas prêt');
-            return;
-        }
-        
-        console.log('📞 Appel de', peerId);
-        const call = peer.call(peerId, localStream);
-        setupCall(call);
-        toggleSidebar();
+        showNotification('Appels désactivés en mode test');
     }
 
     function callId() {
-        const peerId = document.getElementById('call-id').value.trim();
-        if (peerId) {
-            callUser(peerId);
-        }
-    }
-
-    function setupCall(call) {
-        currentCall = call;
-        
-        call.on('stream', (remoteStream) => {
-            console.log('📹 Flux distant reçu');
-            document.getElementById('remote-video').srcObject = remoteStream;
-        });
-
-        call.on('close', () => {
-            console.log('📞 Appel terminé');
-            document.getElementById('remote-video').srcObject = null;
-            currentCall = null;
-            document.getElementById('call-btn').innerHTML = '<i class="fas fa-phone"></i>';
-        });
-
-        call.on('error', (err) => {
-            console.error('❌ Erreur appel:', err);
-            showNotification('Erreur pendant l\'appel');
-        });
-
-        document.getElementById('call-btn').innerHTML = '<i class="fas fa-phone-slash"></i>';
+        showNotification('Appels désactivés en mode test');
     }
 
     function toggleCall() {
-        if (currentCall) {
-            currentCall.close();
-            currentCall = null;
-            document.getElementById('remote-video').srcObject = null;
-            document.getElementById('call-btn').innerHTML = '<i class="fas fa-phone"></i>';
-        }
+        showNotification('Appels désactivés en mode test');
     }
 
     // ===== UTILS =====
@@ -768,4 +742,3 @@
 </script>
 </body>
 </html>
-
