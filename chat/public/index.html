@@ -515,21 +515,23 @@
             document.getElementById('local-video').srcObject = localStream;
             console.log('✅ Caméra démarrée');
 
-            // === 2. CONNEXION PEERJS (SERVEUR PUBLIC) ===
-            console.log('🔄 Connexion à PeerJS...');
+            // Configuration PeerJS avec serveur alternatif
             peer = new Peer({
-                host: '0.peerjs.com',
-                port: 443,
-                path: '/',
-                secure: true,
-                debug: 3,
-                config: {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' }
-                    ]
-                }
-            });
+            host: 'peerjs-server.herokuapp.com',  // Serveur alternatif
+            port: 443,
+            path: '/',
+            secure: true,
+            debug: 3,
+            config: {
+                iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            { urls: 'stun:stun3.l.google.com:19302' },
+            { urls: 'stun:stun4.l.google.com:19302' }
+        ]
+    }
+});
 
             peer.on('open', (peerId) => {
                 console.log('✅ PeerJS connecté, ID:', peerId);
@@ -766,3 +768,4 @@
 </script>
 </body>
 </html>
+
