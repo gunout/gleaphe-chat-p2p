@@ -495,7 +495,7 @@
     let currentUser = null;
     let onlineUsers = [];
 
-    // ===== CONNEXION =====
+    // ===== CONNEXION PRINCIPALE =====
     async function connect() {
         const pseudo = document.getElementById('pseudo').value.trim();
         const gender = document.getElementById('gender').value;
@@ -506,16 +506,19 @@
         }
 
         try {
-            // Caméra
+            // === 1. DÉMARRER LA CAMÉRA ===
+            console.log('📷 Démarrage de la caméra...');
             localStream = await navigator.mediaDevices.getUserMedia({ 
                 video: { width: { ideal: 640 }, height: { ideal: 480 } }, 
                 audio: true 
             });
             document.getElementById('local-video').srcObject = localStream;
+            console.log('✅ Caméra démarrée');
 
-            // Configuration PeerJS avec serveur PUBLIC
+            // === 2. CONNEXION PEERJS (SERVEUR PUBLIC) ===
+            console.log('🔄 Connexion à PeerJS...');
             peer = new Peer({
-                host: '0.peerjs.com',  // Serveur public PeerJS
+                host: '0.peerjs.com',
                 port: 443,
                 path: '/',
                 secure: true,
@@ -523,43 +526,39 @@
                 config: {
                     iceServers: [
                         { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'stun:stun2.l.google.com:19302' },
-                        { urls: 'stun:stun3.l.google.com:19302' },
-                        { urls: 'stun:stun4.l.google.com:19302' }
+                        { urls: 'stun:stun1.l.google.com:19302' }
                     ]
                 }
             });
 
             peer.on('open', (peerId) => {
-                console.log('✅ PeerJS connecté (serveur public), ID:', peerId);
+                console.log('✅ PeerJS connecté, ID:', peerId);
+                
+                // Mise à jour de l'interface
                 document.getElementById('my-id').innerText = peerId;
                 document.getElementById('sidebar-pseudo').innerText = pseudo;
                 document.getElementById('avatar').innerText = pseudo.charAt(0).toUpperCase();
                 
+                // Sauvegarde de l'utilisateur
                 currentUser = {
                     peerId: peerId,
                     pseudo: pseudo,
                     gender: gender
                 };
 
-                // Socket.IO
+                // === 3. CONNEXION AU SERVEUR SOCKET.IO ===
                 connectToServer();
                 
+                // === 4. AFFICHER L'INTERFACE PRINCIPALE ===
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('main-screen').style.display = 'block';
+                
+                console.log('🎉 Connecté avec succès!');
             });
 
             peer.on('error', (err) => {
                 console.error('❌ Erreur PeerJS:', err);
                 showNotification('Erreur PeerJS: ' + err.type);
-                
-                // Tentative de reconnexion
-                if (err.type === 'unavailable-id' || err.type === 'network') {
-                    setTimeout(() => {
-                        peer.reconnect();
-                    }, 3000);
-                }
             });
 
             peer.on('call', (call) => {
@@ -570,40 +569,56 @@
             });
 
         } catch(e) {
-            console.error('Erreur:', e);
+            console.error('❌ Erreur globale:', e);
             alert('Erreur: ' + e.message);
         }
     }
 
-    // ===== SERVEUR SOCKET.IO =====
+    // ===== CONNEXION AU SERVEUR SOCKET.IO =====
     function connectToServer() {
+        console.log('📡 Connexion au serveur Socket.IO...');
+        
         socket = io({
             transports: ['websocket', 'polling'],
             reconnection: true,
-            reconnectionAttempts: 10
+            reconnectionAttempts: 10,
+            timeout: 10000
         });
 
         socket.on('connect', () => {
-            console.log('✅ Socket.IO connecté');
+            console.log('✅ Socket.IO connecté, ID:', socket.id);
+            
+            // ENVOYER LES INFORMATIONS UTILISATEUR AU SERVEUR
             socket.emit('user-connect', {
                 peerId: currentUser.peerId,
                 pseudo: currentUser.pseudo
             });
             
-            // Demander la liste immédiatement
-            socket.emit('get-users');
+            // Demander la liste des utilisateurs
+            setTimeout(() => {
+                socket.emit('get-users');
+            }, 500);
+            
+            showNotification('Connecté au serveur');
         });
 
         socket.on('users-update', (users) => {
-            console.log('📋 Liste reçue:', users);
+            console.log('📋 Liste reçue du serveur:', users);
+            
+            // Filtrer pour ne pas s'afficher soi-même
             onlineUsers = users.filter(u => u.peerId !== currentUser.peerId);
+            
+            // Mettre à jour l'interface
             document.getElementById('online-count').innerText = onlineUsers.length;
             document.getElementById('sidebar-count').innerText = onlineUsers.length;
+            
+            // Afficher la liste
             updateOnlineUsers();
-        });
-
-        socket.on('notification', (data) => {
-            showNotification(data.message);
+            
+            // Notification si des utilisateurs sont en ligne
+            if (onlineUsers.length > 0) {
+                showNotification(`${onlineUsers.length} utilisateur(s) en ligne`);
+            }
         });
 
         socket.on('connect_error', (error) => {
@@ -617,7 +632,7 @@
         });
     }
 
-    // ===== LISTE EN LIGNE =====
+    // ===== AFFICHAGE DE LA LISTE DES UTILISATEURS =====
     function updateOnlineUsers() {
         const list = document.getElementById('online-users');
         
@@ -640,8 +655,12 @@
 
     // ===== APPELS =====
     function callUser(peerId) {
-        if (!peer) return;
+        if (!peer) {
+            showNotification('PeerJS pas prêt');
+            return;
+        }
         
+        console.log('📞 Appel de', peerId);
         const call = peer.call(peerId, localStream);
         setupCall(call);
         toggleSidebar();
@@ -658,17 +677,19 @@
         currentCall = call;
         
         call.on('stream', (remoteStream) => {
+            console.log('📹 Flux distant reçu');
             document.getElementById('remote-video').srcObject = remoteStream;
         });
 
         call.on('close', () => {
+            console.log('📞 Appel terminé');
             document.getElementById('remote-video').srcObject = null;
             currentCall = null;
             document.getElementById('call-btn').innerHTML = '<i class="fas fa-phone"></i>';
         });
 
         call.on('error', (err) => {
-            console.error('Erreur appel:', err);
+            console.error('❌ Erreur appel:', err);
             showNotification('Erreur pendant l\'appel');
         });
 
@@ -701,6 +722,7 @@
             const enabled = localStream.getAudioTracks()[0].enabled;
             localStream.getAudioTracks()[0].enabled = !enabled;
             document.getElementById('audio-btn').style.color = !enabled ? '#667eea' : '#999';
+            showNotification(!enabled ? 'Micro activé' : 'Micro désactivé');
         }
     }
 
@@ -710,12 +732,13 @@
             localStream.getVideoTracks()[0].enabled = !enabled;
             document.getElementById('video-btn').style.color = !enabled ? '#667eea' : '#999';
             
-            // Indicateur visuel
             const localVideo = document.getElementById('local-video');
             if (!enabled) {
                 localVideo.style.filter = 'grayscale(100%)';
+                showNotification('Caméra désactivée');
             } else {
                 localVideo.style.filter = 'none';
+                showNotification('Caméra activée');
             }
         }
     }
@@ -728,39 +751,18 @@
         setTimeout(() => notif.remove(), 3000);
     }
 
-    function addMessage(text, isMine) {
-        const container = document.getElementById('chat-messages');
-        const msg = document.createElement('div');
-        msg.className = `message ${isMine ? 'mine' : ''}`;
-        msg.innerText = text;
-        container.appendChild(msg);
-        container.scrollTop = container.scrollHeight;
-    }
-
-    function spawnEffect() {
-        const effect = document.createElement('div');
-        effect.style.position = 'absolute';
-        effect.style.top = '50%';
-        effect.style.left = '50%';
-        effect.style.transform = 'translate(-50%, -50%)';
-        effect.style.fontSize = '4rem';
-        effect.style.color = '#ff4757';
-        effect.innerHTML = '🎁';
-        effect.style.animation = 'floatUp 1s ease-out';
-        effect.style.zIndex = '1000';
-        document.getElementById('main-screen').appendChild(effect);
-        setTimeout(() => effect.remove(), 1000);
-    }
-
-    // Animation pour les effets
-    const style = document.createElement('style');
-    style.innerHTML = `
-        @keyframes floatUp {
-            0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
-            100% { transform: translate(-50%, -200%) scale(2); opacity: 0; }
+    // Test manuel (accessible depuis la console)
+    window.testConnection = function() {
+        if (!currentUser) {
+            alert('Connectez-vous d\'abord');
+            return;
         }
-    `;
-    document.head.appendChild(style);
+        socket.emit('user-connect', {
+            peerId: currentUser.peerId,
+            pseudo: currentUser.pseudo
+        });
+        console.log('✅ Test: envoi manuel effectué');
+    };
 </script>
 </body>
 </html>
