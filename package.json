@@ -1,0 +1,26 @@
+{
+  "name": "gleaphe-chat",
+  "version": "1.0.0",
+  "description": "Gleaphe Chat - Communication P2P en temps réel",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "nodemon server/index.js",
+    "build": "echo 'Build complete'"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.5.4",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20"
+  },
+  "engines": {
+    "node": "16.x"
+  },
+  "keywords": ["chat", "webrtc", "p2p", "videocall"],
+  "author": "Gleaphe",
+  "license": "MIT"
+}
