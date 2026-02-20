@@ -2,530 +2,959 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gleaphe Chat - Communication P2P</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>GLEAPHE CHAT | P2P LIVE</title>
     
-    <!-- PeerJS est commenté car non utilisé pour l'instant -->
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <!-- PeerJS est commenté car non utilisé -->
     <!-- <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script> -->
     <script src="/socket.io/socket.io.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', system-ui, sans-serif;
+        /* --- CORE VARIABLES --- */
+        :root {
+            --bg-deep: #020205;
+            --bg-hud: rgba(10, 20, 30, 0.85);
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff0055;
+            --neon-purple: #bc13fe;
+            --text-tech: #e0f7fa;
+            --glass: rgba(0, 243, 255, 0.05);
+            --font-main: 'Share Tech Mono', monospace;
+            --font-head: 'Orbitron', sans-serif;
+            --border-tech: 1px solid rgba(0, 243, 255, 0.3);
+            --safe-area-bottom: env(safe-area-inset-bottom);
+            --safe-area-top: env(safe-area-inset-top);
+            --online: #00ff88;
         }
 
+        * { 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; 
+            margin: 0; 
+            padding: 0; 
+        }
+        
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        #app {
-            width: 100%;
-            max-width: 480px;
-            height: 100%;
-            background: white;
-            position: relative;
-            border-radius: 20px 20px 0 0;
+            margin: 0; 
+            padding: 0; 
+            background-color: var(--bg-deep); 
+            color: var(--text-tech);
+            font-family: var(--font-main); 
+            height: 100dvh; 
             overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            position: fixed;
+            width: 100%;
         }
 
-        /* LOGIN SCREEN */
-        #login-screen {
+        /* --- BACKGROUND FX --- */
+        .grid-bg {
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
             height: 100%;
-            display: flex;
+            background-image: 
+                linear-gradient(rgba(0, 243, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+            transform: perspective(500px) rotateX(60deg) scale(2);
+            animation: gridMove 20s linear infinite;
+            opacity: 0.2; 
+            z-index: 0; 
+            pointer-events: none;
+        }
+        @keyframes gridMove { 
+            0% { transform: perspective(500px) rotateX(60deg) scale(2) translateY(0); } 
+            100% { transform: perspective(500px) rotateX(60deg) scale(2) translateY(40px); } 
+        }
+
+        .vignette {
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            background: radial-gradient(circle, transparent 50%, #000 100%);
+            z-index: 1; 
+            pointer-events: none;
+        }
+
+        /* --- APP CONTAINER --- */
+        #app {
+            width: 100%; 
+            height: 100%; 
+            max-width: 480px;
+            position: relative; 
+            background: rgba(2, 2, 5, 0.8);
+            overflow: hidden; 
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.1);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            z-index: 2;
+        }
+
+        /* --- VIEW SYSTEM --- */
+        .view {
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            transition: opacity 0.3s ease;
+            display: none; 
             flex-direction: column;
-            justify-content: center;
+            z-index: 10;
+            background: var(--bg-deep);
+            overflow: hidden;
+        }
+        .view.active { 
+            display: flex; 
+            z-index: 20; 
+        }
+
+        /* === LOGIN VIEW === */
+        #view-login {
+            justify-content: center; 
             align-items: center;
-            padding: 30px;
-            background: white;
+            background: radial-gradient(circle at center, rgba(0, 243, 255, 0.1) 0%, #000 100%);
+            border: 1px solid var(--neon-cyan);
+            margin: 10px; 
+            width: calc(100% - 20px); 
+            height: calc(100% - 20px);
+            clip-path: polygon(10% 0, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%);
+            padding: 20px;
         }
 
-        .logo {
+        .login-logo {
+            font-family: var(--font-head); 
+            font-size: 2.5rem; 
+            text-transform: uppercase;
+            letter-spacing: 4px; 
+            margin-bottom: 30px; 
+            text-shadow: 0 0 10px var(--neon-cyan);
+            animation: flicker 3s infinite;
             text-align: center;
-            margin-bottom: 40px;
+        }
+        @keyframes flicker { 
+            0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 1; } 
+            20%, 24%, 55% { opacity: 0.6; } 
         }
 
-        .logo h1 {
-            font-size: 2.5rem;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-weight: bold;
-        }
-
-        .logo p {
-            color: #666;
-            margin-top: 5px;
-        }
-
-        .input-group {
-            width: 100%;
-            margin: 10px 0;
-        }
-
-        .input-group input, .input-group select {
-            width: 100%;
-            padding: 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
+        .tech-input {
+            width: 100%; 
+            background: rgba(0,0,0,0.6); 
+            border: var(--border-tech);
+            color: var(--neon-cyan); 
+            padding: 15px; 
+            font-family: var(--font-main);
+            text-align: center; 
+            margin-bottom: 20px; 
+            clip-path: polygon(5% 0, 100% 0, 100% 70%, 95% 100%, 0 100%, 0 30%);
+            outline: none; 
+            transition: 0.3s;
             font-size: 16px;
-            transition: all 0.3s;
+        }
+        .tech-input:focus { 
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3); 
+            border-color: var(--neon-cyan); 
         }
 
-        .input-group input:focus {
-            border-color: #667eea;
-            outline: none;
-        }
-
-        .login-btn {
-            width: 100%;
-            padding: 15px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
+        .cyber-btn {
+            width: 100%; 
+            background: var(--neon-pink); 
+            color: #fff; 
             border: none;
-            border-radius: 10px;
+            padding: 15px; 
+            font-family: var(--font-head); 
+            font-weight: 700; 
+            letter-spacing: 2px;
+            cursor: pointer; 
+            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+            box-shadow: 0 0 20px rgba(255, 0, 85, 0.4);
+            position: relative; 
+            overflow: hidden;
             font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 20px;
-            transition: transform 0.2s;
         }
-
-        .login-btn:hover {
-            transform: scale(1.02);
+        .cyber-btn::before {
+            content: ''; 
+            position: absolute; 
+            top: 0; 
+            left: -100%; 
+            width: 100%; 
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: 0.5s;
         }
+        .cyber-btn:hover::before { left: 100%; }
 
-        .permission-note {
-            margin-top: 15px;
-            font-size: 12px;
-            color: #ff4757;
+        .permission-info {
+            font-size: 0.7rem;
+            color: var(--neon-pink);
+            margin: 15px 0;
+            padding: 10px;
+            border: 1px dashed var(--neon-pink);
             text-align: center;
         }
 
-        /* MAIN SCREEN */
-        #main-screen {
-            height: 100%;
-            display: none;
-            position: relative;
-            background: #f5f5f5;
+        /* === HUD ELEMENTS === */
+        .hud-corner {
+            position: absolute; 
+            width: 30px; 
+            height: 30px;
+            border: 2px solid var(--neon-cyan); 
+            z-index: 45; 
+            pointer-events: none;
+        }
+        .tl { top: 10px; left: 10px; border-right: 0; border-bottom: 0; }
+        .tr { top: 10px; right: 10px; border-left: 0; border-bottom: 0; }
+        .bl { bottom: 10px; left: 10px; border-right: 0; border-top: 0; }
+        .br { bottom: 10px; right: 10px; border-left: 0; border-top: 0; }
+
+        .scanline {
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 2px;
+            background: var(--neon-cyan); 
+            opacity: 0.5; 
+            z-index: 40;
+            animation: scan 4s linear infinite; 
+            pointer-events: none;
+        }
+        @keyframes scan { 
+            0% { top: 0%; opacity: 0; } 
+            10% { opacity: 1; } 
+            90% { opacity: 1; } 
+            100% { top: 100%; opacity: 0; } 
         }
 
-        #remote-video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            background: #000;
-            display: none; /* Caché car pas d'appels pour l'instant */
-        }
-
-        #local-video {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 100px;
-            height: 150px;
-            object-fit: cover;
-            border: 3px solid white;
-            border-radius: 10px;
-            background: #000;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-
+        /* === TOP BAR === */
         .top-bar {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            padding: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: linear-gradient(180deg, rgba(0,0,0,0.5), transparent);
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%;
+            padding: 10px; 
+            padding-top: max(10px, var(--safe-area-top));
+            z-index: 100; 
+            background: linear-gradient(180deg, rgba(0,0,0,0.9), transparent);
+            pointer-events: none;
+        }
+        .top-bar > * {
+            pointer-events: auto;
+        }
+        
+        .status-line {
+            display: flex; 
+            justify-content: space-between; 
+            font-size: 0.6rem; 
+            color: var(--neon-cyan);
+            border-bottom: 1px solid rgba(0,243,255,0.3); 
+            padding-bottom: 3px;
+            margin-bottom: 3px;
+        }
+        .brand { 
+            font-family: var(--font-head); 
+            font-size: 1rem; 
+            text-shadow: 0 0 5px var(--neon-pink); 
+            color: #fff; 
+        }
+        .menu-btn {
+            background: none; 
+            border: none; 
+            color: var(--neon-cyan); 
+            font-size: 1rem; 
+            cursor: pointer;
         }
 
         .online-badge {
-            background: rgba(255,255,255,0.2);
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid var(--online);
+            border-radius: 15px;
+            padding: 3px 8px;
+            font-size: 0.6rem;
+            color: var(--online);
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            cursor: pointer;
+        }
+
+        /* === VIDEO STAGE === */
+        .video-stage { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            overflow: hidden; 
+            background: #000;
+            z-index: 5;
+        }
+        
+        #remoteVideo { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            z-index: 5; 
+            opacity: 0; 
+            transform: scaleX(-1);
+            transition: opacity 0.3s;
+        }
+        #remoteVideo.active { 
+            opacity: 1; 
+        }
+        
+        .pip-container {
+            position: absolute; 
+            top: max(90px, var(--safe-area-top) + 60px); 
+            right: 8px; 
+            width: 65px; 
+            height: 90px;
+            z-index: 20; 
+            border: 1px solid var(--neon-cyan);
+            background: #000; 
+            overflow: hidden;
+            border-radius: 3px;
+            box-shadow: 0 0 10px var(--neon-cyan);
+            pointer-events: none;
+            opacity: 0.9;
+        }
+        #localVideo { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            transform: scaleX(-1);
+            transition: opacity 0.3s;
+        }
+        #localVideo.camera-off {
+            opacity: 0.3;
+            filter: grayscale(100%);
+        }
+
+        .cam-off-text {
+            position: absolute;
+            bottom: 1px;
+            right: 1px;
+            color: var(--neon-pink);
+            font-size: 0.4rem;
+            background: rgba(0,0,0,0.5);
+            padding: 1px 2px;
+            border-radius: 2px;
+            z-index: 22;
+        }
+
+        .profile-card {
+            position: absolute; 
+            bottom: 110px; 
+            left: 8px;
+            background: rgba(0, 0, 0, 0.7); 
+            border: 1px solid var(--neon-purple);
+            padding: 4px 8px; 
+            z-index: 60;
+            border-radius: 3px;
+            box-shadow: 0 0 8px rgba(188, 19, 254, 0.3);
+            opacity: 0; 
+            transform: translateX(-15px); 
+            transition: 0.4s;
+            pointer-events: none;
+            max-width: 55%;
+            font-size: 0.7rem;
+        }
+        .profile-card.show { 
+            opacity: 1; 
+            transform: translateX(0); 
+        }
+        .p-name { 
+            color: var(--neon-purple); 
+            font-family: var(--font-head); 
+            font-size: 0.8rem; 
+        }
+        .p-meta { 
+            font-size: 0.5rem; 
+            color: var(--neon-cyan); 
+            margin-top: 2px; 
+        }
+
+        /* === CONTROLS DOCK === */
+        .controls-dock {
+            position: absolute; 
+            bottom: 0; 
+            left: 0; 
+            width: 100%;
+            padding-bottom: max(12px, var(--safe-area-bottom));
+            display: flex; 
+            justify-content: space-around; 
+            align-items: center;
+            z-index: 100; 
+            height: 85px;
+            background: linear-gradient(0deg, rgba(0,0,0,0.9), transparent);
+            pointer-events: none;
+        }
+        .controls-dock > * {
+            pointer-events: auto;
+        }
+
+        .cyber-btn-circle {
+            width: 42px; 
+            height: 42px; 
+            border-radius: 50%;
+            background: rgba(0,0,0,0.8); 
+            border: 2px solid var(--neon-cyan);
+            color: #fff; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            cursor: pointer; 
+            transition: all 0.2s; 
+            font-size: 1rem;
             backdrop-filter: blur(5px);
-            padding: 8px 15px;
-            border-radius: 20px;
-            color: white;
-            font-size: 14px;
+            box-shadow: 0 0 8px rgba(0,243,255,0.3);
+        }
+        .cyber-btn-circle.camera-off {
+            border-color: var(--neon-pink);
+            background: rgba(255, 0, 85, 0.2);
+            color: var(--neon-pink);
+        }
+
+        .btn-main-core {
+            width: 65px; 
+            height: 65px;
+            background: radial-gradient(circle, var(--neon-pink) 0%, #990033 100%);
+            border: 2px solid #fff;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex; 
+            flex-direction: column;
+            justify-content: center; 
+            align-items: center;
+            cursor: pointer; 
+            box-shadow: 0 0 25px var(--neon-pink);
+            z-index: 101; 
+            font-family: var(--font-head); 
+            font-weight: 700; 
+            color: #fff;
+            font-size: 0.6rem;
+            transition: all 0.3s;
+        }
+        .btn-main-core.stop {
+            background: radial-gradient(circle, #ff3333 0%, #990000 100%);
+            box-shadow: 0 0 25px #ff0000;
+        }
+
+        /* === CHAT SYSTEM === */
+        .chat-overlay { 
+            position: absolute; 
+            bottom: 95px; 
+            left: 8px; 
+            width: 70%; 
+            pointer-events: none; 
+            z-index: 80; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 4px; 
+            max-height: 130px; 
+            overflow-y: auto;
+        }
+        .msg-bubble {
+            background: rgba(0, 0, 0, 0.7); 
+            border: 1px solid var(--neon-cyan);
+            color: #fff; 
+            padding: 4px 8px; 
+            font-family: var(--font-main); 
+            font-size: 0.7rem;
+            max-width: 90%; 
+            backdrop-filter: blur(5px);
+            border-radius: 3px;
+        }
+        .msg-bubble.mine { 
+            border-color: var(--neon-pink); 
+            background: rgba(255, 0, 85, 0.15); 
+            align-self: flex-end; 
+            text-align: right; 
+        }
+
+        .chat-input-area {
+            position: absolute; 
+            bottom: -80px; 
+            left: 0; 
+            width: 100%; 
+            height: 70px;
+            background: rgba(0,0,0,0.95); 
+            border-top: 2px solid var(--neon-cyan);
+            display: flex; 
+            align-items: center; 
+            padding: 12px;
+            padding-bottom: max(12px, var(--safe-area-bottom));
+            transition: bottom 0.3s ease; 
+            z-index: 102;
+            backdrop-filter: blur(10px);
+        }
+        .chat-input-area.open { 
+            bottom: 0; 
+        }
+        .chat-input { 
+            flex: 1; 
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--neon-cyan); 
+            color: #fff; 
+            padding: 8px;
+            font-family: var(--font-main); 
+            outline: none;
+            border-radius: 3px;
+            font-size: 13px;
+        }
+        .btn-send {
+            width: 35px;
+            height: 35px;
+            background: var(--neon-cyan);
+            border: none;
+            border-radius: 3px;
+            margin-left: 8px;
+            color: #000;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* === SIDEBAR === */
+        .sidebar {
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 85%; 
+            height: 100%;
+            background: rgba(5, 5, 10, 0.98); 
+            backdrop-filter: blur(10px);
+            border-right: 2px solid var(--neon-cyan); 
+            z-index: 200;
+            transform: translateX(-100%); 
+            transition: transform 0.3s ease;
+            display: flex; 
+            flex-direction: column;
+            padding-top: var(--safe-area-top);
+        }
+        .sidebar.open { 
+            transform: translateX(0); 
+        }
+        .sidebar-header { 
+            padding: 12px; 
+            border-bottom: 1px solid var(--neon-cyan); 
+            background: rgba(0, 243, 255, 0.1); 
+        }
+        
+        .my-id-container {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--neon-cyan);
+            padding: 8px;
+            margin: 10px;
+            border-radius: 3px;
+        }
+        .my-id-label {
+            font-size: 0.5rem;
+            color: var(--neon-pink);
+            margin-bottom: 3px;
+        }
+        .my-id-value {
+            font-size: 0.65rem;
+            color: #fff;
+            word-break: break-all;
+            background: rgba(0,0,0,0.3);
+            padding: 5px;
+            border-radius: 2px;
+        }
+        .copy-id-btn {
+            margin-top: 5px;
+            padding: 3px;
+            background: rgba(0,243,255,0.2);
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            font-size: 0.6rem;
+            cursor: pointer;
+            text-align: center;
+        }
+        
+        .online-users-section {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        
+        .section-title {
+            color: var(--neon-cyan);
+            font-size: 0.65rem;
+            margin-bottom: 6px;
+            text-transform: uppercase;
             display: flex;
             align-items: center;
             gap: 5px;
+        }
+        
+        .user-list-item {
+            display: flex; 
+            align-items: center; 
+            gap: 6px; 
+            padding: 6px;
+            margin-bottom: 3px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 3px;
             cursor: pointer;
+            font-size: 0.65rem;
         }
-
-        .online-dot {
-            width: 8px;
-            height: 8px;
-            background: #4caf50;
+        .user-list-item:hover {
+            background: rgba(0,243,255,0.1);
+        }
+        
+        .user-status-dot {
+            width: 5px;
+            height: 5px;
             border-radius: 50%;
+            background: var(--online);
+            box-shadow: 0 0 5px var(--online);
         }
-
-        .menu-btn {
-            width: 40px;
-            height: 40px;
-            background: rgba(255,255,255,0.2);
-            backdrop-filter: blur(5px);
+        
+        .user-avatar-small {
+            width: 22px;
+            height: 22px;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            cursor: pointer;
-        }
-
-        .controls {
-            position: absolute;
-            bottom: 30px;
-            left: 0;
-            right: 0;
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-        }
-
-        .ctrl-btn {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: white;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .ctrl-btn:hover {
-            transform: scale(1.1);
-        }
-
-        .call-btn {
-            background: #ff4757;
-            color: white;
-        }
-
-        .call-btn.active {
-            background: #ff6b81;
-        }
-
-        .test-mode-badge {
-            position: absolute;
-            top: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #ff4757;
-            color: white;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 12px;
             font-weight: bold;
-            z-index: 100;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            color: #000;
+            font-size: 0.6rem;
         }
 
-        /* SIDEBAR */
-        #sidebar {
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 85%;
-            height: 100%;
-            background: white;
-            transition: left 0.3s;
-            z-index: 100;
-            padding: 20px;
+        .contacts-section {
+            flex: 1;
             overflow-y: auto;
-            box-shadow: 2px 0 20px rgba(0,0,0,0.1);
+            padding: 10px;
         }
 
-        #sidebar.open {
-            left: 0;
-        }
-
-        .close-btn {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            font-size: 20px;
-            color: #666;
+        .contact-item {
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            padding: 6px;
+            margin-bottom: 4px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 3px;
             cursor: pointer;
+            font-size: 0.65rem;
         }
-
-        .profile-section {
-            text-align: center;
-            margin: 40px 0 20px;
+        
+        .contact-avatar {
+            width: 24px; 
+            height: 24px; 
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
+            border-radius: 50%;
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            font-weight: bold; 
+            color: #000;
+            font-size: 0.6rem;
         }
-
-        .avatar {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
+        
+        .contact-actions {
+            display: flex;
+            gap: 4px;
+            opacity: 0.5;
+        }
+        .contact-item:hover .contact-actions {
+            opacity: 1;
+        }
+        
+        .contact-call-btn, .contact-delete-btn {
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 32px;
-            margin: 0 auto 10px;
-        }
-
-        .my-id {
-            background: #f5f5f5;
-            padding: 10px;
-            border-radius: 10px;
-            font-size: 12px;
-            word-break: break-all;
-            margin: 10px 0;
-        }
-
-        .section {
-            margin: 25px 0;
-        }
-
-        .section h3 {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 16px;
-        }
-
-        .user-item {
-            background: #f8f9fa;
-            padding: 12px;
-            border-radius: 10px;
-            margin: 5px 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
             cursor: pointer;
-            transition: all 0.2s;
+            font-size: 0.6rem;
         }
 
-        .user-item:hover {
-            background: #e9ecef;
-        }
-
-        .user-status {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #4caf50;
-        }
-
-        .user-info {
-            flex: 1;
-        }
-
-        .user-name {
-            font-weight: 600;
-            color: #333;
-        }
-
-        .user-peer {
-            font-size: 10px;
-            color: #999;
-        }
-
-        .call-input {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .call-input input {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-
-        .call-input button {
-            padding: 10px 15px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 5px;
+        .add-contact-btn {
+            margin: 0 10px 10px 10px;
+            padding: 8px;
+            background: rgba(0, 243, 255, 0.1);
+            border: 1px dashed var(--neon-cyan);
+            color: var(--neon-cyan);
+            text-align: center;
             cursor: pointer;
+            font-size: 0.7rem;
         }
 
-        .overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
+        .overlay-bg { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0,0,0,0.8); 
+            z-index: 150; 
+            display: none; 
+            backdrop-filter: blur(5px); 
+        }
+        .overlay-bg.active { 
+            display: block; 
+        }
+
+        /* === MODALS === */
+        .modal {
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
             height: 100%;
-            background: rgba(0,0,0,0.5);
-            display: none;
+            background: rgba(0,0,0,0.98); 
+            z-index: 300;
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center;
+            padding: 20px; 
+            border: 2px solid var(--neon-cyan);
+            clip-path: polygon(10% 0, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%);
+        }
+        .modal.hidden { 
+            display: none; 
+        }
+        .modal input {
+            width: 100%; 
+            background: rgba(0,0,0,0.6); 
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan); 
+            padding: 10px; 
+            font-family: var(--font-main); 
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .three-dots-menu {
+            position: absolute;
+            bottom: 95px;
+            right: 8px;
+            width: 28px;
+            height: 28px;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid var(--neon-cyan);
+            border-radius: 3px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 3px;
+            cursor: pointer;
             z-index: 90;
         }
-
-        .overlay.active {
+        .three-dots-menu span {
+            width: 4px;
+            height: 4px;
+            background: var(--neon-cyan);
+            border-radius: 50%;
             display: block;
         }
 
-        .notification {
+        .status-badge-bottom {
             position: absolute;
-            bottom: 100px;
-            left: 20px;
-            right: 20px;
-            background: white;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-            animation: slideUp 0.3s;
-            z-index: 1000;
+            bottom: 95px;
+            left: 8px;
+            padding: 3px 6px;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            font-size: 0.5rem;
+            z-index: 90;
+            border-radius: 2px;
         }
 
-        @keyframes slideUp {
-            from { transform: translateY(100px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+        @keyframes floatUp { 
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 1; } 
+            100% { transform: translate(-50%, -200%) scale(2); opacity: 0; } 
         }
-
-        .chat-messages {
+        .floating-icon {
             position: absolute;
-            bottom: 100px;
-            left: 20px;
-            right: 20px;
-            max-height: 200px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .message {
-            background: white;
-            padding: 8px 12px;
-            border-radius: 18px;
-            max-width: 80%;
-            align-self: flex-start;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        .message.mine {
-            background: #667eea;
-            color: white;
-            align-self: flex-end;
-        }
-
-        .warning-note {
-            background: #fff3cd;
-            color: #856404;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            font-size: 12px;
-            text-align: center;
+            color: var(--neon-pink);
+            font-size: 1.2rem;
+            z-index: 200;
+            pointer-events: none;
+            animation: floatUp 1s ease-out forwards;
         }
     </style>
 </head>
 <body>
+
 <div id="app">
-    <!-- LOGIN -->
-    <div id="login-screen">
-        <div class="logo">
-            <h1>Gleaphe</h1>
-            <p>Chat en direct</p>
+    <div class="grid-bg"></div>
+    <div class="vignette"></div>
+    <div class="overlay-bg" id="overlayBg" onclick="UI.toggleSidebar(false)"></div>
+
+    <!-- === VUE 1: LOGIN === -->
+    <div id="view-login" class="view active">
+        <div class="login-logo">GLEAPHE<br><span style="font-size:1rem; color:var(--neon-pink)">// P2P LIVE</span></div>
+        <div style="color:var(--text-tech); margin-bottom:20px; font-size:0.8rem; text-align:center;">
+            [ WEBRTC P2P ]<br>
+            AUTHENTIFICATION REQUISE
+        </div>
+        <input type="text" id="loginPseudo" class="tech-input" placeholder="IDENTIFIANT (PSEUDO)..." autocomplete="off">
+        
+        <div class="permission-info" id="permissionStatus">
+            ⚡ CLIQUEZ POUR ACCÉDER À LA CAMÉRA
         </div>
         
-        <div class="input-group">
-            <input type="text" id="pseudo" placeholder="Ton pseudo" value="User_" + Math.floor(Math.random()*1000)>
-        </div>
-        
-        <div class="input-group">
-            <select id="gender">
-                <option value="M">👨 Homme</option>
-                <option value="F">👩 Femme</option>
-                <option value="autre">👤 Autre</option>
-            </select>
-        </div>
-        
-        <button class="login-btn" onclick="connect()">
-            Rejoindre Gleaphe Chat
+        <button class="cyber-btn" onclick="connect()">
+            <i class="fas fa-camera"></i> AUTORISER CAMÉRA
         </button>
         
-        <div class="permission-note" id="permissionNote">
-            ⚠️ Autorisez l'accès à la caméra quand le navigateur le demande
+        <div style="margin-top:20px; font-size:0.6rem; color:#666; text-align:center;">
+            🔒 HTTPS requis • WebRTC P2P
         </div>
     </div>
 
-    <!-- MAIN -->
-    <div id="main-screen">
-        <div class="test-mode-badge" id="testModeBadge">🔧 MODE TEST - Appels désactivés</div>
+    <!-- === SIDEBAR === -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2 style="margin:0; color:var(--neon-cyan); font-size:1.1rem;">GLEAPHE NET</h2>
+            <div style="font-size:0.6rem; margin-top:3px; color:#888;">USER: <span id="sidebarMyName" style="color:#fff">UNKNOWN</span></div>
+        </div>
         
-        <div class="top-bar">
-            <div class="menu-btn" onclick="toggleSidebar()">
-                <i class="fas fa-bars"></i>
+        <div class="my-id-container">
+            <div class="my-id-label">MON ID P2P</div>
+            <div class="my-id-value" id="fullPeerId">...</div>
+            <div class="copy-id-btn" onclick="copyMyId()">
+                <i class="fas fa-copy"></i> COPIER L'ID
             </div>
-            <div class="online-badge" onclick="toggleSidebar()">
-                <span class="online-dot"></span>
-                <span id="online-count">0</span> en ligne
+        </div>
+        
+        <div class="online-users-section">
+            <div class="section-title">
+                <i class="fas fa-circle" style="color:var(--online);"></i> 
+                EN LIGNE (<span id="onlineCount">0</span>)
+            </div>
+            <div id="onlineUsersList"></div>
+        </div>
+        
+        <div class="add-contact-btn" onclick="UI.openAddContactModal()">
+            <i class="fas fa-plus-circle"></i> AJOUTER CONTACT
+        </div>
+        
+        <div class="contacts-section">
+            <div class="section-title">
+                <i class="fas fa-address-book"></i> MES CONTACTS
+            </div>
+            <div id="contactList"></div>
+        </div>
+    </div>
+
+    <!-- === MODALS === -->
+    <div class="modal hidden" id="modalAddContact">
+        <h3 style="font-size:1.1rem;">NOUVEAU CONTACT</h3>
+        <input type="text" id="newContactName" placeholder="NOM">
+        <input type="text" id="newContactId" placeholder="ID CIBLE">
+        <div style="display:flex; gap:10px; width:100%; margin-top:10px;">
+            <button class="btn-modal btn-cancel" onclick="UI.closeModal('modalAddContact')" style="flex:1; padding:8px;">ANNULER</button>
+            <button class="btn-modal btn-confirm" onclick="addContact()" style="flex:1; padding:8px;">AJOUTER</button>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="modalPermissionError">
+        <h3 style="color:var(--neon-pink); font-size:1.1rem;">ERREUR</h3>
+        <div style="margin:15px; text-align:center; font-size:0.8rem;">
+            <p>Impossible d'accéder à la caméra/micro.</p>
+        </div>
+        <button class="btn-modal btn-confirm" onclick="UI.closeModal('modalPermissionError')" style="width:100%; padding:10px;">OK</button>
+    </div>
+
+    <!-- === VUE 2: MAIN APP === -->
+    <div id="view-main" class="view">
+        
+        <div class="scanline"></div>
+        <div class="hud-corner tl"></div>
+        <div class="hud-corner tr"></div>
+        <div class="hud-corner bl"></div>
+        <div class="hud-corner br"></div>
+
+        <div class="status-badge-bottom" id="connectionStatus">DÉCONNECTÉ</div>
+
+        <div class="three-dots-menu" onclick="UI.toggleSidebar(true)">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+
+        <div class="top-bar">
+            <div class="status-line">
+                <span>P2P: <span id="p2pStatus" style="color:#ff0000">OFFLINE</span></span>
+                <span id="clock">00:00:00</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div class="brand">GLEAPHE <span style="color:var(--neon-cyan)">LIVE</span></div>
+                <div class="online-badge" onclick="UI.toggleSidebar(true)">
+                    <i class="fas fa-circle"></i> <span id="headerOnlineCount">0</span>
+                </div>
             </div>
         </div>
 
-        <video id="remote-video" autoplay playsinline muted></video>
-        <video id="local-video" autoplay playsinline muted></video>
-
-        <div class="chat-messages" id="chat-messages"></div>
-
-        <div class="controls">
-            <div class="ctrl-btn" onclick="toggleAudio()" id="audio-btn">
-                <i class="fas fa-microphone"></i>
+        <div class="video-stage" id="videoStage">
+            <video id="remoteVideo" autoplay playsinline></video>
+            
+            <div class="pip-container">
+                <video id="localVideo" autoplay playsinline muted></video>
+                <div class="cam-off-text" id="camOffText" style="display: none;">OFF</div>
             </div>
-            <div class="ctrl-btn call-btn" onclick="toggleCall()" id="call-btn">
-                <i class="fas fa-phone"></i>
+
+            <div class="profile-card" id="profileCard">
+                <div class="p-name" id="matchName">CIBLE INCONNUE</div>
+                <div class="p-meta" id="matchLoc">EN ATTENTE...</div>
             </div>
-            <div class="ctrl-btn" onclick="toggleVideo()" id="video-btn">
+
+            <div class="chat-overlay" id="chatOverlay"></div>
+        </div>
+
+        <div class="controls-dock">
+            <div class="cyber-btn-circle" onclick="toggleCamera()" id="btnCamera" title="Caméra">
                 <i class="fas fa-video"></i>
             </div>
-        </div>
-    </div>
-
-    <!-- SIDEBAR -->
-    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
-    <div id="sidebar">
-        <div class="close-btn" onclick="toggleSidebar()">✕</div>
-
-        <div class="profile-section">
-            <div class="avatar" id="avatar">G</div>
-            <div style="font-weight: bold;" id="sidebar-pseudo"></div>
-            <div class="my-id" id="my-id">Chargement...</div>
-            <button onclick="copyId()" style="padding:5px 15px; background:#667eea; color:white; border:none; border-radius:5px; cursor:pointer; margin-top:5px;">
-                📋 Copier mon ID
-            </button>
-        </div>
-
-        <div class="warning-note">
-            ⚠️ Mode test : les appels sont désactivés.<br>
-            Objectif : vérifier la liste des utilisateurs.
-        </div>
-
-        <div class="section">
-            <h3>👥 En ligne (<span id="sidebar-count">0</span>)</h3>
-            <div id="online-users"></div>
-        </div>
-
-        <div class="section">
-            <h3>📞 Appel direct</h3>
-            <div class="call-input">
-                <input type="text" id="call-id" placeholder="ID de l'utilisateur">
-                <button onclick="callId()">Appeler</button>
+            <div class="cyber-btn-circle" id="btnMic" onclick="toggleMic()" title="Micro">
+                <i class="fas fa-microphone"></i>
             </div>
-            <p style="font-size:10px; color:#999; margin-top:5px;">⚠️ Non fonctionnel en mode test</p>
+            
+            <div class="btn-main-core" id="btnMain" onclick="mainAction()">
+                <i class="fas fa-play" style="font-size:1.1rem; margin-bottom:2px;"></i>
+                <div style="font-size:0.55rem;" id="btnMainText">START</div>
+            </div>
+            
+            <div class="cyber-btn-circle" onclick="sendGift()" style="color:var(--neon-pink)" title="Cadeau">
+                <i class="fas fa-biohazard"></i>
+            </div>
+            <div class="cyber-btn-circle" onclick="UI.toggleChat()" title="Chat">
+                <i class="fas fa-comment-dots"></i>
+            </div>
+        </div>
+
+        <div class="chat-input-area" id="chatInputArea">
+            <input type="text" class="chat-input" id="msgInput" placeholder="> MESSAGE..." autocomplete="off">
+            <div class="btn-send" onclick="sendMessage()">
+                <i class="fas fa-paper-plane"></i>
+            </div>
         </div>
     </div>
+
 </div>
 
 <script>
@@ -534,210 +963,254 @@
     let localStream = null;
     let currentUser = null;
     let onlineUsers = [];
+    let isMicOn = true;
+    let isCameraOn = true;
 
-    // ===== CONNEXION PRINCIPALE =====
+    // ===== CONNEXION =====
     async function connect() {
-        const pseudo = document.getElementById('pseudo').value.trim();
-        const gender = document.getElementById('gender').value;
+        const pseudo = document.getElementById('loginPseudo').value.trim();
         
         if (!pseudo) {
             alert("Entre un pseudo !");
             return;
         }
 
+        localStorage.setItem('nexus_pseudo', pseudo);
+
         try {
-            // === 1. DÉMARRER LA CAMÉRA ===
-            console.log('📷 Démarrage de la caméra...');
+            // Caméra
+            document.getElementById('permissionStatus').innerHTML = '⏳ DEMANDE...';
             localStream = await navigator.mediaDevices.getUserMedia({ 
                 video: { width: { ideal: 640 }, height: { ideal: 480 } }, 
                 audio: true 
             });
-            document.getElementById('local-video').srcObject = localStream;
-            console.log('✅ Caméra démarrée');
+            document.getElementById('localVideo').srcObject = localStream;
+            document.getElementById('permissionStatus').innerHTML = '✅ ACCÈS AUTORISÉ';
 
-            // === 2. GÉNÉRER UN ID LOCAL (SANS PEERJS) ===
+            // Générer un ID local
             const peerId = 'user-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now().toString(36);
-            console.log('📋 ID généré localement:', peerId);
             
-            // Mise à jour de l'interface
-            document.getElementById('my-id').innerText = peerId;
-            document.getElementById('sidebar-pseudo').innerText = pseudo;
-            document.getElementById('avatar').innerText = pseudo.charAt(0).toUpperCase();
-            
-            // Sauvegarde de l'utilisateur
             currentUser = {
                 peerId: peerId,
-                pseudo: pseudo,
-                gender: gender
+                pseudo: pseudo
             };
 
-            // === 3. CONNEXION AU SERVEUR SOCKET.IO ===
+            // Mise à jour UI
+            document.getElementById('sidebarMyName').innerText = pseudo;
+            document.getElementById('fullPeerId').innerText = peerId;
+            document.getElementById('p2pStatus').innerText = 'ONLINE';
+            document.getElementById('p2pStatus').style.color = '#00ff00';
+            document.getElementById('connectionStatus').innerText = 'CONNECTÉ';
+            
+            // Changer de vue
+            document.getElementById('view-login').classList.remove('active');
+            document.getElementById('view-main').classList.add('active');
+
+            // Connexion Socket.IO
             connectToServer();
-            
-            // === 4. AFFICHER L'INTERFACE PRINCIPALE ===
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('main-screen').style.display = 'block';
-            
-            console.log('🎉 Connecté avec succès!');
-            
-            // === 5. NOTIFICATION POUR LE MODE TEST ===
-            showNotification('Mode test - Vérification de la liste utilisateurs');
 
         } catch(e) {
-            console.error('❌ Erreur globale:', e);
-            alert('Erreur: ' + e.message);
+            document.getElementById('permissionStatus').innerHTML = '❌ ERREUR';
+            document.getElementById('modalPermissionError').classList.remove('hidden');
         }
     }
 
-    // ===== CONNEXION AU SERVEUR SOCKET.IO =====
+    // ===== SOCKET.IO =====
     function connectToServer() {
-        console.log('📡 Connexion au serveur Socket.IO...');
-        
         socket = io({
             transports: ['websocket', 'polling'],
             reconnection: true,
-            reconnectionAttempts: 10,
-            timeout: 10000
+            reconnectionAttempts: 10
         });
 
         socket.on('connect', () => {
-            console.log('✅ Socket.IO connecté, ID:', socket.id);
-            
-            // ENVOYER LES INFORMATIONS UTILISATEUR AU SERVEUR
+            console.log('✅ Socket.IO connecté');
             socket.emit('user-connect', {
                 peerId: currentUser.peerId,
                 pseudo: currentUser.pseudo
             });
-            
-            // Demander la liste des utilisateurs
-            setTimeout(() => {
-                socket.emit('get-users');
-            }, 500);
-            
-            showNotification('Connecté au serveur');
         });
 
         socket.on('users-update', (users) => {
-            console.log('📋 Liste reçue du serveur:', users);
-            
-            // Filtrer pour ne pas s'afficher soi-même
             onlineUsers = users.filter(u => u.peerId !== currentUser.peerId);
-            
-            // Mettre à jour l'interface
-            document.getElementById('online-count').innerText = onlineUsers.length;
-            document.getElementById('sidebar-count').innerText = onlineUsers.length;
-            
-            // Afficher la liste
-            updateOnlineUsers();
-            
-            // Notification si des utilisateurs sont en ligne
-            if (onlineUsers.length > 0) {
-                showNotification(`${onlineUsers.length} utilisateur(s) en ligne`);
-            }
+            document.getElementById('onlineCount').innerText = onlineUsers.length;
+            document.getElementById('headerOnlineCount').innerText = onlineUsers.length;
+            updateOnlineUsersList();
         });
 
         socket.on('connect_error', (error) => {
             console.error('❌ Erreur Socket.IO:', error);
-            showNotification('Erreur de connexion au serveur');
-        });
-
-        socket.on('disconnect', () => {
-            console.log('❌ Socket.IO déconnecté');
-            showNotification('Connexion perdue, reconnexion...');
         });
     }
 
-    // ===== AFFICHAGE DE LA LISTE DES UTILISATEURS =====
-    function updateOnlineUsers() {
-        const list = document.getElementById('online-users');
-        
+    // ===== LISTE EN LIGNE =====
+    function updateOnlineUsersList() {
+        const list = document.getElementById('onlineUsersList');
         if (onlineUsers.length === 0) {
-            list.innerHTML = '<div style="color:#999; padding:10px;">Personne en ligne</div>';
+            list.innerHTML = '<div style="text-align:center; color:#666; padding:10px;">Aucun utilisateur en ligne</div>';
             return;
         }
-
         list.innerHTML = onlineUsers.map(u => `
-            <div class="user-item" onclick="showNotification('Appels désactivés en mode test')">
-                <span class="user-status"></span>
-                <div class="user-info">
-                    <div class="user-name">${u.pseudo}</div>
-                    <div class="user-peer">${u.peerId.substring(0,8)}...</div>
-                </div>
-                <i class="fas fa-phone" style="color:#667eea;"></i>
+            <div class="user-list-item">
+                <div class="user-status-dot"></div>
+                <div class="user-avatar-small">${u.pseudo.charAt(0).toUpperCase()}</div>
+                <div style="flex:1; font-size:0.65rem;">${u.pseudo}</div>
             </div>
         `).join('');
     }
 
-    // ===== APPELS (DÉSACTIVÉS EN MODE TEST) =====
-    function callUser(peerId) {
-        showNotification('Appels désactivés en mode test');
+    // ===== CONTACTS =====
+    function addContact() {
+        const name = document.getElementById('newContactName').value.trim();
+        const id = document.getElementById('newContactId').value.trim();
+        if (!name || !id) {
+            alert("Remplissez tous les champs");
+            return;
+        }
+        // À implémenter avec localStorage
+        UI.closeModal('modalAddContact');
     }
 
-    function callId() {
-        showNotification('Appels désactivés en mode test');
-    }
-
-    function toggleCall() {
-        showNotification('Appels désactivés en mode test');
-    }
-
-    // ===== UTILS =====
-    function toggleSidebar() {
-        document.getElementById('sidebar').classList.toggle('open');
-        document.getElementById('overlay').classList.toggle('active');
-    }
-
-    function copyId() {
-        const id = document.getElementById('my-id').innerText;
-        navigator.clipboard.writeText(id);
-        showNotification('ID copié !');
-    }
-
-    function toggleAudio() {
-        if (localStream) {
-            const enabled = localStream.getAudioTracks()[0].enabled;
-            localStream.getAudioTracks()[0].enabled = !enabled;
-            document.getElementById('audio-btn').style.color = !enabled ? '#667eea' : '#999';
-            showNotification(!enabled ? 'Micro activé' : 'Micro désactivé');
+    function copyMyId() {
+        if (currentUser?.peerId) {
+            navigator.clipboard.writeText(currentUser.peerId);
+            showNotification('ID copié !');
         }
     }
 
-    function toggleVideo() {
+    // ===== CONTROLES =====
+    function toggleCamera() {
         if (localStream) {
-            const enabled = localStream.getVideoTracks()[0].enabled;
-            localStream.getVideoTracks()[0].enabled = !enabled;
-            document.getElementById('video-btn').style.color = !enabled ? '#667eea' : '#999';
+            isCameraOn = !isCameraOn;
+            localStream.getVideoTracks().forEach(track => track.enabled = isCameraOn);
             
-            const localVideo = document.getElementById('local-video');
-            if (!enabled) {
-                localVideo.style.filter = 'grayscale(100%)';
-                showNotification('Caméra désactivée');
+            const btn = document.getElementById('btnCamera');
+            const camOffText = document.getElementById('camOffText');
+            
+            if (isCameraOn) {
+                btn.innerHTML = '<i class="fas fa-video"></i>';
+                btn.classList.remove('camera-off');
+                camOffText.style.display = 'none';
             } else {
-                localVideo.style.filter = 'none';
-                showNotification('Caméra activée');
+                btn.innerHTML = '<i class="fas fa-video-slash"></i>';
+                btn.classList.add('camera-off');
+                camOffText.style.display = 'block';
             }
         }
     }
 
+    function toggleMic() {
+        if (localStream) {
+            isMicOn = !isMicOn;
+            localStream.getAudioTracks().forEach(track => track.enabled = isMicOn);
+            
+            const btn = document.getElementById('btnMic');
+            btn.style.color = isMicOn ? '#fff' : 'var(--neon-pink)';
+            btn.innerHTML = isMicOn ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
+        }
+    }
+
+    function mainAction() {
+        // Mode attente (pas d'appels pour l'instant)
+    }
+
+    function sendGift() {
+        spawnEffect();
+    }
+
+    function sendMessage() {
+        const input = document.getElementById('msgInput');
+        const text = input.value.trim();
+        if (text) {
+            addMessage(text, true);
+            input.value = '';
+            UI.toggleChat(false);
+        }
+    }
+
+    // ===== UI =====
+    const UI = {
+        toggleSidebar: function(open) {
+            const sb = document.getElementById('sidebar');
+            const bg = document.getElementById('overlayBg');
+            if (open) { 
+                sb.classList.add('open'); 
+                bg.classList.add('active');
+            } else { 
+                sb.classList.remove('open'); 
+                bg.classList.remove('active'); 
+            }
+        },
+        toggleChat: function(forceOpen) {
+            const area = document.getElementById('chatInputArea');
+            if (forceOpen !== undefined) { 
+                forceOpen ? area.classList.add('open') : area.classList.remove('open'); 
+            } else { 
+                area.classList.toggle('open'); 
+                if (area.classList.contains('open')) {
+                    document.getElementById('msgInput').focus();
+                }
+            }
+        },
+        openAddContactModal: function() {
+            document.getElementById('modalAddContact').classList.remove('hidden');
+        },
+        closeModal: function(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+    };
+
+    // ===== UTILS =====
     function showNotification(message) {
         const notif = document.createElement('div');
-        notif.className = 'notification';
+        notif.style.position = 'absolute';
+        notif.style.bottom = '100px';
+        notif.style.left = '20px';
+        notif.style.right = '20px';
+        notif.style.background = '#000';
+        notif.style.border = '1px solid var(--neon-cyan)';
+        notif.style.padding = '10px';
+        notif.style.color = '#fff';
+        notif.style.zIndex = '1000';
+        notif.style.animation = 'slideUp 0.3s';
         notif.innerText = message;
         document.getElementById('main-screen').appendChild(notif);
         setTimeout(() => notif.remove(), 3000);
     }
 
-    // Test manuel (accessible depuis la console)
-    window.testConnection = function() {
-        if (!currentUser) {
-            alert('Connectez-vous d\'abord');
-            return;
+    function addMessage(text, isMine) {
+        const container = document.getElementById('chatOverlay');
+        const bubble = document.createElement('div');
+        bubble.className = `msg-bubble ${isMine ? 'mine' : ''}`;
+        bubble.innerText = text;
+        container.appendChild(bubble);
+        container.scrollTop = container.scrollHeight;
+        setTimeout(() => bubble.remove(), 10000);
+    }
+
+    function spawnEffect() {
+        const stage = document.getElementById('videoStage');
+        const icon = document.createElement('div');
+        icon.className = 'floating-icon';
+        icon.innerHTML = '<i class="fas fa-biohazard"></i>';
+        icon.style.left = Math.random() * 80 + 10 + '%';
+        icon.style.top = '50%';
+        stage.appendChild(icon);
+        setTimeout(() => icon.remove(), 1000);
+    }
+
+    // Horloge
+    setInterval(() => {
+        const now = new Date();
+        document.getElementById('clock').innerText = now.toLocaleTimeString();
+    }, 1000);
+
+    // Initialisation
+    window.onload = () => {
+        const savedPseudo = localStorage.getItem('nexus_pseudo');
+        if (savedPseudo) {
+            document.getElementById('loginPseudo').value = savedPseudo;
         }
-        socket.emit('user-connect', {
-            peerId: currentUser.peerId,
-            pseudo: currentUser.pseudo
-        });
-        console.log('✅ Test: envoi manuel effectué');
     };
 </script>
 </body>
