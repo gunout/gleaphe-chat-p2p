@@ -232,7 +232,7 @@
             100% { top: 100%; opacity: 0; } 
         }
 
-        /* === TOP BAR (FIXE) - Ménage pour ne pas cacher les boutons === */
+        /* === TOP BAR === */
         .top-bar {
             position: absolute; 
             top: 0; 
@@ -271,7 +271,6 @@
             cursor: pointer;
         }
 
-        /* Online Users Badge - Déplacé plus bas */
         .online-badge {
             background: rgba(0, 255, 136, 0.2);
             border: 1px solid var(--online);
@@ -283,27 +282,6 @@
             align-items: center;
             gap: 3px;
             cursor: pointer;
-        }
-        .online-badge i {
-            font-size: 0.5rem;
-        }
-
-        /* === AFFICHAGE COMPLET DE L'ID === */
-        .my-id-full {
-            background: rgba(0,0,0,0.7);
-            border: 1px solid var(--neon-cyan);
-            padding: 8px 12px;
-            margin: 5px 10px;
-            font-size: 0.6rem;
-            color: var(--neon-cyan);
-            word-break: break-all;
-            border-radius: 3px;
-            text-align: center;
-            letter-spacing: 1px;
-        }
-        .my-id-full span {
-            color: #fff;
-            font-weight: bold;
         }
 
         /* === VIDEO STAGE === */
@@ -334,7 +312,6 @@
             opacity: 1; 
         }
         
-        /* PIP */
         .pip-container {
             position: absolute; 
             top: max(90px, var(--safe-area-top) + 60px); 
@@ -374,7 +351,6 @@
             z-index: 22;
         }
 
-        /* === PROFILE CARD === */
         .profile-card {
             position: absolute; 
             bottom: 110px; 
@@ -407,7 +383,7 @@
             margin-top: 2px; 
         }
 
-        /* === CONTROLS DOCK - Les trois traits (≡) ajoutés === */
+        /* === CONTROLS DOCK === */
         .controls-dock {
             position: absolute; 
             bottom: 0; 
@@ -549,7 +525,7 @@
             justify-content: center;
         }
 
-        /* === SIDEBAR AMÉLIORÉE === */
+        /* === SIDEBAR === */
         .sidebar {
             position: absolute; 
             top: 0; 
@@ -575,7 +551,6 @@
             background: rgba(0, 243, 255, 0.1); 
         }
         
-        /* ID complet et visible */
         .my-id-container {
             background: rgba(0,0,0,0.5);
             border: 1px solid var(--neon-cyan);
@@ -589,10 +564,9 @@
             margin-bottom: 3px;
         }
         .my-id-value {
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: #fff;
             word-break: break-all;
-            font-family: monospace;
             background: rgba(0,0,0,0.3);
             padding: 5px;
             border-radius: 2px;
@@ -634,7 +608,10 @@
             background: rgba(255,255,255,0.03);
             border-radius: 3px;
             cursor: pointer;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
+        }
+        .user-list-item:hover {
+            background: rgba(0,243,255,0.1);
         }
         
         .user-status-dot {
@@ -673,7 +650,7 @@
             background: rgba(255,255,255,0.03);
             border-radius: 3px;
             cursor: pointer;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
         }
         
         .contact-avatar {
@@ -766,13 +743,12 @@
             font-size: 14px;
         }
 
-        /* === NOUVEAU: Les trois traits (menu) en bas === */
         .three-dots-menu {
             position: absolute;
-            bottom: 100px;
-            right: 10px;
-            width: 30px;
-            height: 30px;
+            bottom: 95px;
+            right: 8px;
+            width: 28px;
+            height: 28px;
             background: rgba(0,0,0,0.6);
             border: 1px solid var(--neon-cyan);
             border-radius: 3px;
@@ -780,10 +756,9 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            gap: 4px;
+            gap: 3px;
             cursor: pointer;
             z-index: 90;
-            backdrop-filter: blur(5px);
         }
         .three-dots-menu span {
             width: 4px;
@@ -792,16 +767,11 @@
             border-radius: 50%;
             display: block;
         }
-        .three-dots-menu:hover {
-            background: rgba(0,243,255,0.2);
-            box-shadow: 0 0 10px var(--neon-cyan);
-        }
 
-        /* Statut déplacé en bas */
         .status-badge-bottom {
             position: absolute;
             bottom: 95px;
-            left: 10px;
+            left: 8px;
             padding: 3px 6px;
             background: rgba(0,0,0,0.6);
             border: 1px solid var(--neon-cyan);
@@ -811,7 +781,6 @@
             border-radius: 2px;
         }
 
-        /* Animations */
         @keyframes floatUp { 
             0% { transform: translate(-50%, -50%) scale(0); opacity: 1; } 
             100% { transform: translate(-50%, -200%) scale(2); opacity: 0; } 
@@ -855,14 +824,13 @@
         </div>
     </div>
 
-    <!-- === SIDEBAR AVEC ID COMPLET === -->
+    <!-- === SIDEBAR === -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <h2 style="margin:0; color:var(--neon-cyan); font-size:1.1rem;">GLEAPHE NET</h2>
             <div style="font-size:0.6rem; margin-top:3px; color:#888;">USER: <span id="sidebarMyName" style="color:#fff">UNKNOWN</span></div>
         </div>
         
-        <!-- ID complet et copiable -->
         <div class="my-id-container">
             <div class="my-id-label">MON ID P2P</div>
             <div class="my-id-value" id="fullPeerId">...</div>
@@ -871,7 +839,6 @@
             </div>
         </div>
         
-        <!-- Section Utilisateurs Connectés -->
         <div class="online-users-section">
             <div class="section-title">
                 <i class="fas fa-circle" style="color:var(--online);"></i> 
@@ -880,12 +847,10 @@
             <div id="onlineUsersList"></div>
         </div>
         
-        <!-- Bouton Ajouter Contact -->
         <div class="add-contact-btn" onclick="UI.openAddContactModal()">
             <i class="fas fa-plus-circle"></i> AJOUTER CONTACT
         </div>
         
-        <!-- Section Contacts -->
         <div class="contacts-section">
             <div class="section-title">
                 <i class="fas fa-address-book"></i> MES CONTACTS
@@ -936,24 +901,20 @@
     <!-- === VUE 2: MAIN APP === -->
     <div id="view-main" class="view">
         
-        <!-- HUD -->
         <div class="scanline"></div>
         <div class="hud-corner tl"></div>
         <div class="hud-corner tr"></div>
         <div class="hud-corner bl"></div>
         <div class="hud-corner br"></div>
 
-        <!-- Status déplacé en bas -->
         <div class="status-badge-bottom" id="connectionStatus">DÉCONNECTÉ</div>
 
-        <!-- Les trois traits (menu) -->
         <div class="three-dots-menu" onclick="UI.toggleSidebar(true)">
             <span></span>
             <span></span>
             <span></span>
         </div>
 
-        <!-- TOP BAR - Allégée -->
         <div class="top-bar">
             <div class="status-line">
                 <span>P2P: <span id="p2pStatus" style="color:#ff0000">OFFLINE</span></span>
@@ -967,7 +928,6 @@
             </div>
         </div>
 
-        <!-- VIDEO -->
         <div class="video-stage" id="videoStage">
             <video id="remoteVideo" autoplay playsinline></video>
             
@@ -984,7 +944,6 @@
             <div class="chat-overlay" id="chatOverlay"></div>
         </div>
 
-        <!-- CONTROLS DOCK -->
         <div class="controls-dock">
             <div class="cyber-btn-circle" onclick="App.toggleCamera()" id="btnCamera" title="Caméra">
                 <i class="fas fa-video"></i>
@@ -1006,7 +965,6 @@
             </div>
         </div>
 
-        <!-- CHAT INPUT -->
         <div class="chat-input-area" id="chatInputArea">
             <input type="text" class="chat-input" id="msgInput" placeholder="> MESSAGE..." autocomplete="off">
             <div class="btn-send" onclick="App.sendMessage()">
@@ -1048,7 +1006,8 @@
             isCameraOn: true,
             pendingCall: null,
             currentPeerId: null,
-            contactToDelete: null
+            contactToDelete: null,
+            broadcastInterval: null
         },
 
         init: function() {
@@ -1076,6 +1035,13 @@
             if (savedPseudo) {
                 document.getElementById('loginPseudo').value = savedPseudo;
             }
+
+            // Nettoyer l'intervalle à la déconnexion
+            window.addEventListener('beforeunload', () => {
+                if (this.state.broadcastInterval) {
+                    clearInterval(this.state.broadcastInterval);
+                }
+            });
         },
 
         copyMyId: function() {
@@ -1121,7 +1087,6 @@
 
             this.state.peer.on('open', (id) => {
                 this.state.currentPeerId = id;
-                this.addOnlineUser(this.state.pseudo, id);
                 
                 document.getElementById('sidebarMyName').innerText = this.state.pseudo;
                 document.getElementById('fullPeerId').innerText = id;
@@ -1129,8 +1094,12 @@
                 document.getElementById('p2pStatus').style.color = '#00ff00';
                 document.getElementById('connectionStatus').innerText = 'CONNECTÉ';
                 
-                setInterval(() => this.broadcastOnlineStatus(), 5000);
+                // Broadcast du statut toutes les 2 secondes
+                this.state.broadcastInterval = setInterval(() => this.broadcastOnlineStatus(), 2000);
                 this.broadcastOnlineStatus();
+                
+                // Se connecter à tous les pairs connus
+                this.connectToAllPeers();
             });
 
             this.state.peer.on('call', (call) => {
@@ -1138,51 +1107,139 @@
             });
 
             this.state.peer.on('connection', (conn) => {
+                console.log('Nouvelle connexion data de:', conn.peer);
+                
+                conn.on('open', () => {
+                    console.log('Connexion data ouverte avec:', conn.peer);
+                    // Envoyer notre statut dès la connexion
+                    conn.send({
+                        type: 'online-status',
+                        pseudo: this.state.pseudo,
+                        peerId: this.state.currentPeerId,
+                        timestamp: Date.now()
+                    });
+                });
+
                 conn.on('data', (data) => {
                     if (data.type === 'online-status') {
                         this.handleOnlineStatus(data);
+                    } else if (data.type === 'message') {
+                        UI.addMessage(data.text, false);
+                    } else if (data.type === 'gift') {
+                        UI.spawnEffect();
                     }
                 });
+
+                conn.on('close', () => {
+                    console.log('Connexion data fermée avec:', conn.peer);
+                    this.removeOnlineUser(conn.peer);
+                });
+            });
+
+            this.state.peer.on('error', (err) => {
+                console.error('Peer error:', err);
             });
 
             document.getElementById('view-login').classList.remove('active');
             document.getElementById('view-main').classList.add('active');
             UI.renderContacts();
-            UI.renderOnlineUsers();
         },
 
-        addOnlineUser: function(pseudo, peerId) {
-            const existing = this.state.onlineUsers.find(u => u.peerId === peerId);
-            if (!existing && peerId !== this.state.currentPeerId) {
-                this.state.onlineUsers.push({ pseudo, peerId, lastSeen: Date.now() });
-                UI.renderOnlineUsers();
+        // Se connecter à tous les pairs connus via les IDs de contacts
+        connectToAllPeers: function() {
+            setTimeout(() => {
+                this.state.contacts.forEach(contact => {
+                    if (contact.id !== this.state.currentPeerId) {
+                        this.connectToPeer(contact.id);
+                    }
+                });
+            }, 1000);
+        },
+
+        connectToPeer: function(peerId) {
+            if (!peerId || peerId === this.state.currentPeerId) return;
+            
+            try {
+                const conn = this.state.peer.connect(peerId, {
+                    reliable: true,
+                    serialization: 'json'
+                });
+                
+                conn.on('open', () => {
+                    console.log('Connecté à:', peerId);
+                });
+                
+                conn.on('error', (err) => {
+                    console.log('Erreur connexion à', peerId, err);
+                });
+            } catch(e) {
+                console.log('Impossible de se connecter à', peerId);
             }
         },
 
         broadcastOnlineStatus: function() {
-            if (this.state.peer && this.state.peer.connections) {
-                const status = {
-                    type: 'online-status',
-                    pseudo: this.state.pseudo,
-                    peerId: this.state.currentPeerId,
-                    timestamp: Date.now()
-                };
-                
+            if (!this.state.peer) return;
+            
+            const status = {
+                type: 'online-status',
+                pseudo: this.state.pseudo,
+                peerId: this.state.currentPeerId,
+                timestamp: Date.now()
+            };
+            
+            // Envoyer à toutes les connexions existantes
+            if (this.state.peer.connections) {
                 Object.keys(this.state.peer.connections).forEach(peerId => {
                     this.state.peer.connections[peerId].forEach(conn => {
-                        if (conn.open) conn.send(status);
+                        if (conn.open) {
+                            try {
+                                conn.send(status);
+                            } catch(e) {}
+                        }
                     });
                 });
             }
             
-            const now = Date.now();
-            this.state.onlineUsers = this.state.onlineUsers.filter(u => (now - u.lastSeen) < 15000);
-            UI.renderOnlineUsers();
+            // Essayer de se connecter aux contacts qui ne sont pas encore connectés
+            this.state.contacts.forEach(contact => {
+                if (contact.id !== this.state.currentPeerId) {
+                    const existingConnections = this.state.peer.connections[contact.id];
+                    if (!existingConnections || existingConnections.length === 0) {
+                        this.connectToPeer(contact.id);
+                    }
+                }
+            });
         },
 
         handleOnlineStatus: function(data) {
             if (data.peerId !== this.state.currentPeerId) {
-                this.addOnlineUser(data.pseudo, data.peerId);
+                const existingUser = this.state.onlineUsers.find(u => u.peerId === data.peerId);
+                if (existingUser) {
+                    existingUser.lastSeen = Date.now();
+                    existingUser.pseudo = data.pseudo;
+                } else {
+                    this.state.onlineUsers.push({ 
+                        pseudo: data.pseudo, 
+                        peerId: data.peerId, 
+                        lastSeen: Date.now() 
+                    });
+                    UI.addMessage(`${data.pseudo} est en ligne`, false);
+                }
+                
+                // Nettoyer les utilisateurs inactifs
+                const now = Date.now();
+                this.state.onlineUsers = this.state.onlineUsers.filter(u => (now - u.lastSeen) < 10000);
+                
+                UI.renderOnlineUsers();
+            }
+        },
+
+        removeOnlineUser: function(peerId) {
+            const user = this.state.onlineUsers.find(u => u.peerId === peerId);
+            if (user) {
+                UI.addMessage(`${user.pseudo} s'est déconnecté`, false);
+                this.state.onlineUsers = this.state.onlineUsers.filter(u => u.peerId !== peerId);
+                UI.renderOnlineUsers();
             }
         },
 
@@ -1203,6 +1260,9 @@
             document.getElementById('newContactName').value = '';
             document.getElementById('newContactId').value = '';
             UI.renderContacts();
+            
+            // Essayer de se connecter au nouveau contact
+            this.connectToPeer(id);
         },
 
         deleteContact: function(name, id) {
@@ -1251,11 +1311,6 @@
                     
                     UI.setProfile(name, 'EN COMMUNICATION');
                     UI.addMessage('Appel établi', false);
-                });
-
-                call.on('data', (data) => {
-                    if (data.type === 'message') UI.addMessage(data.text, false);
-                    else if (data.type === 'gift') UI.spawnEffect();
                 });
 
                 call.on('close', () => this.endCall());
@@ -1327,7 +1382,14 @@
             }
 
             this.state.pendingCall = call;
-            document.getElementById('incomingCallerInfo').innerHTML = `Appel de: <span style="color:var(--neon-cyan)">${call.peer.substring(0, 8)}...</span>`;
+            
+            // Chercher le nom dans les contacts ou utilisateurs en ligne
+            const callerId = call.peer;
+            const onlineUser = this.state.onlineUsers.find(u => u.peerId === callerId);
+            const contact = this.state.contacts.find(c => c.id === callerId);
+            const callerName = contact ? contact.name : (onlineUser ? onlineUser.pseudo : callerId.substring(0, 8));
+            
+            document.getElementById('incomingCallerInfo').innerHTML = `Appel de: <span style="color:var(--neon-cyan)">${callerName}</span>`;
             document.getElementById('modalIncomingCall').classList.remove('hidden');
         },
 
@@ -1353,13 +1415,13 @@
                 btnText.innerText = 'STOP';
                 btnMain.querySelector('i').className = 'fas fa-stop';
                 
-                UI.setProfile(call.peer.substring(0,8), 'EN COMMUNICATION');
+                const callerId = call.peer;
+                const onlineUser = this.state.onlineUsers.find(u => u.peerId === callerId);
+                const contact = this.state.contacts.find(c => c.id === callerId);
+                const callerName = contact ? contact.name : (onlineUser ? onlineUser.pseudo : callerId.substring(0, 8));
+                
+                UI.setProfile(callerName, 'EN COMMUNICATION');
                 UI.addMessage('Appel accepté', false);
-            });
-
-            call.on('data', (data) => {
-                if (data.type === 'message') UI.addMessage(data.text, false);
-                else if (data.type === 'gift') UI.spawnEffect();
             });
 
             call.on('close', () => this.endCall());
@@ -1417,7 +1479,6 @@
         sendGift: function() {
             if (this.state.mode !== 'in-call' || !this.state.currentCall) return;
             UI.spawnEffect();
-            try { this.state.currentCall.send({ type: 'gift' }); } catch(e) {}
         },
 
         sendMessage: function() {
@@ -1512,17 +1573,15 @@
             
             if (!list) return;
             
-            const otherUsers = App.state.onlineUsers.filter(u => u.peerId !== App.state.currentPeerId);
+            count.innerText = App.state.onlineUsers.length;
+            headerCount.innerText = App.state.onlineUsers.length;
             
-            count.innerText = otherUsers.length;
-            headerCount.innerText = otherUsers.length;
-            
-            if (otherUsers.length === 0) {
+            if (App.state.onlineUsers.length === 0) {
                 list.innerHTML = '<div style="text-align:center; color:#666; padding:3px;">AUCUN</div>';
                 return;
             }
 
-            list.innerHTML = otherUsers.map(u => `
+            list.innerHTML = App.state.onlineUsers.map(u => `
                 <div class="user-list-item" onclick="App.callOnlineUser('${u.peerId}', '${u.pseudo}')">
                     <div class="user-status-dot"></div>
                     <div class="user-avatar-small">${u.pseudo.charAt(0).toUpperCase()}</div>
