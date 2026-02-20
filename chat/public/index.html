@@ -513,24 +513,26 @@
             });
             document.getElementById('local-video').srcObject = localStream;
 
-            // PeerJS avec configuration personnalisée
+            // Configuration PeerJS avec serveur PUBLIC
             peer = new Peer({
-                host: window.location.hostname,
-                port: window.location.port || (window.location.protocol === 'https:' ? 443 : 80),
-                path: '/peerjs',
-                secure: window.location.protocol === 'https:',
+                host: '0.peerjs.com',  // Serveur public PeerJS
+                port: 443,
+                path: '/',
+                secure: true,
                 debug: 3,
                 config: {
                     iceServers: [
                         { urls: 'stun:stun.l.google.com:19302' },
                         { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'stun:stun2.l.google.com:19302' }
+                        { urls: 'stun:stun2.l.google.com:19302' },
+                        { urls: 'stun:stun3.l.google.com:19302' },
+                        { urls: 'stun:stun4.l.google.com:19302' }
                     ]
                 }
             });
 
             peer.on('open', (peerId) => {
-                console.log('✅ PeerJS connecté, ID:', peerId);
+                console.log('✅ PeerJS connecté (serveur public), ID:', peerId);
                 document.getElementById('my-id').innerText = peerId;
                 document.getElementById('sidebar-pseudo').innerText = pseudo;
                 document.getElementById('avatar').innerText = pseudo.charAt(0).toUpperCase();
@@ -551,6 +553,13 @@
             peer.on('error', (err) => {
                 console.error('❌ Erreur PeerJS:', err);
                 showNotification('Erreur PeerJS: ' + err.type);
+                
+                // Tentative de reconnexion
+                if (err.type === 'unavailable-id' || err.type === 'network') {
+                    setTimeout(() => {
+                        peer.reconnect();
+                    }, 3000);
+                }
             });
 
             peer.on('call', (call) => {
