@@ -232,14 +232,14 @@
             100% { top: 100%; opacity: 0; } 
         }
 
-        /* === TOP BAR (FIXE) === */
+        /* === TOP BAR (FIXE) - Ménage pour ne pas cacher les boutons === */
         .top-bar {
             position: absolute; 
             top: 0; 
             left: 0; 
             width: 100%;
-            padding: 15px; 
-            padding-top: max(15px, var(--safe-area-top));
+            padding: 10px; 
+            padding-top: max(10px, var(--safe-area-top));
             z-index: 100; 
             background: linear-gradient(180deg, rgba(0,0,0,0.9), transparent);
             pointer-events: none;
@@ -251,15 +251,15 @@
         .status-line {
             display: flex; 
             justify-content: space-between; 
-            font-size: 0.7rem; 
+            font-size: 0.6rem; 
             color: var(--neon-cyan);
             border-bottom: 1px solid rgba(0,243,255,0.3); 
-            padding-bottom: 5px;
-            margin-bottom: 5px;
+            padding-bottom: 3px;
+            margin-bottom: 3px;
         }
         .brand { 
             font-family: var(--font-head); 
-            font-size: 1.2rem; 
+            font-size: 1rem; 
             text-shadow: 0 0 5px var(--neon-pink); 
             color: #fff; 
         }
@@ -267,25 +267,43 @@
             background: none; 
             border: none; 
             color: var(--neon-cyan); 
-            font-size: 1.2rem; 
+            font-size: 1rem; 
             cursor: pointer;
         }
 
-        /* Online Users Badge */
+        /* Online Users Badge - Déplacé plus bas */
         .online-badge {
             background: rgba(0, 255, 136, 0.2);
             border: 1px solid var(--online);
-            border-radius: 20px;
-            padding: 5px 12px;
-            font-size: 0.7rem;
+            border-radius: 15px;
+            padding: 3px 8px;
+            font-size: 0.6rem;
             color: var(--online);
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 3px;
             cursor: pointer;
         }
         .online-badge i {
+            font-size: 0.5rem;
+        }
+
+        /* === AFFICHAGE COMPLET DE L'ID === */
+        .my-id-full {
+            background: rgba(0,0,0,0.7);
+            border: 1px solid var(--neon-cyan);
+            padding: 8px 12px;
+            margin: 5px 10px;
             font-size: 0.6rem;
+            color: var(--neon-cyan);
+            word-break: break-all;
+            border-radius: 3px;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+        .my-id-full span {
+            color: #fff;
+            font-weight: bold;
         }
 
         /* === VIDEO STAGE === */
@@ -319,17 +337,18 @@
         /* PIP */
         .pip-container {
             position: absolute; 
-            top: max(130px, var(--safe-area-top) + 100px); 
-            right: 15px; 
-            width: 90px; 
-            height: 120px;
+            top: max(90px, var(--safe-area-top) + 60px); 
+            right: 8px; 
+            width: 65px; 
+            height: 90px;
             z-index: 20; 
-            border: 2px solid var(--neon-cyan);
+            border: 1px solid var(--neon-cyan);
             background: #000; 
             overflow: hidden;
-            clip-path: polygon(10% 0, 100% 0, 100% 100%, 0 100%, 0 30%);
-            box-shadow: 0 0 20px var(--neon-cyan);
+            border-radius: 3px;
+            box-shadow: 0 0 10px var(--neon-cyan);
             pointer-events: none;
+            opacity: 0.9;
         }
         #localVideo { 
             width: 100%; 
@@ -339,53 +358,39 @@
             transition: opacity 0.3s;
         }
         #localVideo.camera-off {
-            opacity: 0;
+            opacity: 0.3;
+            filter: grayscale(100%);
         }
 
-        /* Camera Off Placeholder */
-        .camera-off-placeholder {
+        .cam-off-text {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #1a1a2e, #16213e);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: var(--neon-cyan);
-            font-size: 0.8rem;
-            z-index: 6;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
-        }
-        .camera-off-placeholder.active {
-            opacity: 1;
-        }
-        .camera-off-placeholder i {
-            font-size: 3rem;
-            margin-bottom: 10px;
-            animation: pulse 2s infinite;
+            bottom: 1px;
+            right: 1px;
+            color: var(--neon-pink);
+            font-size: 0.4rem;
+            background: rgba(0,0,0,0.5);
+            padding: 1px 2px;
+            border-radius: 2px;
+            z-index: 22;
         }
 
         /* === PROFILE CARD === */
         .profile-card {
             position: absolute; 
-            bottom: 160px; 
-            left: 20px;
-            background: rgba(0, 0, 0, 0.8); 
+            bottom: 110px; 
+            left: 8px;
+            background: rgba(0, 0, 0, 0.7); 
             border: 1px solid var(--neon-purple);
-            padding: 10px 20px; 
+            padding: 4px 8px; 
             z-index: 60;
-            clip-path: polygon(5% 0, 100% 0, 95% 100%, 0 100%);
-            box-shadow: 0 0 15px rgba(188, 19, 254, 0.3);
+            border-radius: 3px;
+            box-shadow: 0 0 8px rgba(188, 19, 254, 0.3);
             opacity: 0; 
-            transform: translateX(-20px); 
+            transform: translateX(-15px); 
             transition: 0.4s;
             pointer-events: none;
-            max-width: 80%;
+            max-width: 55%;
+            font-size: 0.7rem;
         }
         .profile-card.show { 
             opacity: 1; 
@@ -394,32 +399,26 @@
         .p-name { 
             color: var(--neon-purple); 
             font-family: var(--font-head); 
-            font-size: 1rem; 
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            font-size: 0.8rem; 
         }
         .p-meta { 
-            font-size: 0.6rem; 
+            font-size: 0.5rem; 
             color: var(--neon-cyan); 
-            display: flex; 
-            align-items: center; 
-            gap: 5px; 
-            margin-top: 5px; 
+            margin-top: 2px; 
         }
 
-        /* === CONTROLS DOCK === */
+        /* === CONTROLS DOCK - Les trois traits (≡) ajoutés === */
         .controls-dock {
             position: absolute; 
             bottom: 0; 
             left: 0; 
             width: 100%;
-            padding-bottom: max(20px, var(--safe-area-bottom));
+            padding-bottom: max(12px, var(--safe-area-bottom));
             display: flex; 
             justify-content: space-around; 
             align-items: center;
             z-index: 100; 
-            height: 140px;
+            height: 85px;
             background: linear-gradient(0deg, rgba(0,0,0,0.9), transparent);
             pointer-events: none;
         }
@@ -428,8 +427,8 @@
         }
 
         .cyber-btn-circle {
-            width: 55px; 
-            height: 55px; 
+            width: 42px; 
+            height: 42px; 
             border-radius: 50%;
             background: rgba(0,0,0,0.8); 
             border: 2px solid var(--neon-cyan);
@@ -439,16 +438,9 @@
             align-items: center;
             cursor: pointer; 
             transition: all 0.2s; 
-            font-size: 1.3rem;
+            font-size: 1rem;
             backdrop-filter: blur(5px);
-            box-shadow: 0 0 15px rgba(0,243,255,0.3);
-        }
-        .cyber-btn-circle:active { 
-            transform: scale(0.9); 
-        }
-        .cyber-btn-circle:hover { 
-            border-color: var(--neon-pink);
-            box-shadow: 0 0 20px var(--neon-pink);
+            box-shadow: 0 0 8px rgba(0,243,255,0.3);
         }
         .cyber-btn-circle.camera-off {
             border-color: var(--neon-pink);
@@ -457,73 +449,73 @@
         }
 
         .btn-main-core {
-            width: 90px; 
-            height: 90px;
+            width: 65px; 
+            height: 65px;
             background: radial-gradient(circle, var(--neon-pink) 0%, #990033 100%);
-            border: 3px solid #fff;
+            border: 2px solid #fff;
             clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
             display: flex; 
             flex-direction: column;
             justify-content: center; 
             align-items: center;
             cursor: pointer; 
-            box-shadow: 0 0 40px var(--neon-pink);
+            box-shadow: 0 0 25px var(--neon-pink);
             z-index: 101; 
             font-family: var(--font-head); 
             font-weight: 700; 
             color: #fff;
-            font-size: 0.8rem;
+            font-size: 0.6rem;
             transition: all 0.3s;
         }
         .btn-main-core.stop {
             background: radial-gradient(circle, #ff3333 0%, #990000 100%);
-            box-shadow: 0 0 40px #ff0000;
+            box-shadow: 0 0 25px #ff0000;
         }
 
         /* === CHAT SYSTEM === */
         .chat-overlay { 
             position: absolute; 
-            bottom: 150px; 
-            left: 20px; 
-            width: 80%; 
+            bottom: 95px; 
+            left: 8px; 
+            width: 70%; 
             pointer-events: none; 
             z-index: 80; 
             display: flex; 
             flex-direction: column; 
-            gap: 8px; 
-            max-height: 200px; 
+            gap: 4px; 
+            max-height: 130px; 
             overflow-y: auto;
         }
         .msg-bubble {
-            background: rgba(0, 0, 0, 0.8); 
+            background: rgba(0, 0, 0, 0.7); 
             border: 1px solid var(--neon-cyan);
             color: #fff; 
-            padding: 8px 12px; 
+            padding: 4px 8px; 
             font-family: var(--font-main); 
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             max-width: 90%; 
             backdrop-filter: blur(5px);
-            border-radius: 5px;
+            border-radius: 3px;
         }
         .msg-bubble.mine { 
             border-color: var(--neon-pink); 
-            background: rgba(255, 0, 85, 0.2); 
+            background: rgba(255, 0, 85, 0.15); 
             align-self: flex-end; 
             text-align: right; 
         }
 
         .chat-input-area {
             position: absolute; 
-            bottom: -100px; 
+            bottom: -80px; 
             left: 0; 
             width: 100%; 
-            height: 100px;
+            height: 70px;
             background: rgba(0,0,0,0.95); 
             border-top: 2px solid var(--neon-cyan);
             display: flex; 
             align-items: center; 
-            padding: 20px;
-            padding-bottom: max(20px, var(--safe-area-bottom));
+            padding: 12px;
+            padding-bottom: max(12px, var(--safe-area-bottom));
             transition: bottom 0.3s ease; 
             z-index: 102;
             backdrop-filter: blur(10px);
@@ -536,32 +528,28 @@
             background: rgba(255,255,255,0.1);
             border: 1px solid var(--neon-cyan); 
             color: #fff; 
-            padding: 15px;
+            padding: 8px;
             font-family: var(--font-main); 
             outline: none;
-            border-radius: 5px;
-            font-size: 16px;
-        }
-        .chat-input:focus {
-            border-color: var(--neon-pink);
-            box-shadow: 0 0 20px var(--neon-pink);
+            border-radius: 3px;
+            font-size: 13px;
         }
         .btn-send {
-            width: 50px;
-            height: 50px;
+            width: 35px;
+            height: 35px;
             background: var(--neon-cyan);
             border: none;
-            border-radius: 5px;
-            margin-left: 10px;
+            border-radius: 3px;
+            margin-left: 8px;
             color: #000;
-            font-size: 1.2rem;
+            font-size: 0.9rem;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        /* === SIDEBAR AVEC GESTION DES CONTACTS === */
+        /* === SIDEBAR AMÉLIORÉE === */
         .sidebar {
             position: absolute; 
             top: 0; 
@@ -582,26 +570,55 @@
             transform: translateX(0); 
         }
         .sidebar-header { 
-            padding: 20px; 
+            padding: 12px; 
             border-bottom: 1px solid var(--neon-cyan); 
             background: rgba(0, 243, 255, 0.1); 
         }
-        .my-peer-id { 
-            font-size: 0.6rem; 
-            color: var(--neon-cyan); 
-            word-break: break-all; 
-            margin-top: 10px; 
+        
+        /* ID complet et visible */
+        .my-id-container {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--neon-cyan);
+            padding: 8px;
+            margin: 10px;
+            border-radius: 3px;
+        }
+        .my-id-label {
+            font-size: 0.5rem;
+            color: var(--neon-pink);
+            margin-bottom: 3px;
+        }
+        .my-id-value {
+            font-size: 0.7rem;
+            color: #fff;
+            word-break: break-all;
+            font-family: monospace;
+            background: rgba(0,0,0,0.3);
+            padding: 5px;
+            border-radius: 2px;
+        }
+        .copy-id-btn {
+            margin-top: 5px;
+            padding: 3px;
+            background: rgba(0,243,255,0.2);
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            font-size: 0.6rem;
+            cursor: pointer;
+            text-align: center;
         }
         
         .online-users-section {
-            padding: 15px;
+            padding: 10px;
             border-bottom: 1px solid rgba(255,255,255,0.1);
+            max-height: 150px;
+            overflow-y: auto;
         }
         
         .section-title {
             color: var(--neon-cyan);
-            font-size: 0.8rem;
-            margin-bottom: 10px;
+            font-size: 0.65rem;
+            margin-bottom: 6px;
             text-transform: uppercase;
             display: flex;
             align-items: center;
@@ -611,29 +628,26 @@
         .user-list-item {
             display: flex; 
             align-items: center; 
-            gap: 12px; 
-            padding: 10px;
-            margin-bottom: 5px;
+            gap: 6px; 
+            padding: 6px;
+            margin-bottom: 3px;
             background: rgba(255,255,255,0.03);
-            border-radius: 5px;
+            border-radius: 3px;
             cursor: pointer;
-            transition: 0.2s;
-        }
-        .user-list-item:hover { 
-            background: rgba(0, 243, 255, 0.1); 
+            font-size: 0.7rem;
         }
         
         .user-status-dot {
-            width: 8px;
-            height: 8px;
+            width: 5px;
+            height: 5px;
             border-radius: 50%;
             background: var(--online);
-            box-shadow: 0 0 10px var(--online);
+            box-shadow: 0 0 5px var(--online);
         }
         
         .user-avatar-small {
-            width: 30px;
-            height: 30px;
+            width: 22px;
+            height: 22px;
             background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
             border-radius: 50%;
             display: flex;
@@ -641,47 +655,30 @@
             justify-content: center;
             font-weight: bold;
             color: #000;
-        }
-        
-        .user-info-small {
-            flex: 1;
-        }
-        
-        .user-name-small {
-            color: #fff;
-            font-size: 0.8rem;
-        }
-        
-        .user-peer-small {
-            color: var(--neon-cyan);
             font-size: 0.6rem;
         }
 
         .contacts-section {
             flex: 1;
             overflow-y: auto;
-            padding: 15px;
+            padding: 10px;
         }
 
         .contact-item {
             display: flex; 
             align-items: center; 
-            gap: 15px; 
-            padding: 12px;
-            margin-bottom: 8px;
+            gap: 8px; 
+            padding: 6px;
+            margin-bottom: 4px;
             background: rgba(255,255,255,0.03);
-            border-radius: 5px;
+            border-radius: 3px;
             cursor: pointer;
-            transition: 0.2s;
-            position: relative;
-        }
-        .contact-item:hover { 
-            background: rgba(0, 243, 255, 0.1); 
+            font-size: 0.7rem;
         }
         
         .contact-avatar {
-            width: 35px; 
-            height: 35px; 
+            width: 24px; 
+            height: 24px; 
             background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
             border-radius: 50%;
             display: flex; 
@@ -689,80 +686,38 @@
             align-items: center;
             font-weight: bold; 
             color: #000;
-            box-shadow: 0 0 10px var(--neon-cyan);
-        }
-        
-        .contact-info {
-            flex: 1;
-        }
-        
-        .contact-name {
-            color: #fff;
-            font-size: 0.9rem;
-            margin-bottom: 3px;
-        }
-        
-        .contact-id {
-            color: var(--neon-cyan);
             font-size: 0.6rem;
         }
         
         .contact-actions {
             display: flex;
-            gap: 10px;
-            opacity: 0;
-            transition: opacity 0.2s;
+            gap: 4px;
+            opacity: 0.5;
         }
         .contact-item:hover .contact-actions {
             opacity: 1;
         }
         
         .contact-call-btn, .contact-delete-btn {
-            width: 30px;
-            height: 30px;
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .contact-call-btn {
-            background: rgba(0, 243, 255, 0.2);
-            border: 1px solid var(--neon-cyan);
-            color: var(--neon-cyan);
-        }
-        .contact-call-btn:hover {
-            background: var(--neon-cyan);
-            color: #000;
-            transform: scale(1.1);
-        }
-        
-        .contact-delete-btn {
-            background: rgba(255, 0, 85, 0.2);
-            border: 1px solid var(--neon-pink);
-            color: var(--neon-pink);
-        }
-        .contact-delete-btn:hover {
-            background: var(--neon-pink);
-            color: #fff;
-            transform: scale(1.1);
+            font-size: 0.6rem;
         }
 
         .add-contact-btn {
-            margin: 0 15px 15px 15px;
-            padding: 12px;
+            margin: 0 10px 10px 10px;
+            padding: 8px;
             background: rgba(0, 243, 255, 0.1);
             border: 1px dashed var(--neon-cyan);
             color: var(--neon-cyan);
             text-align: center;
             cursor: pointer;
-            transition: all 0.2s;
-        }
-        .add-contact-btn:hover {
-            background: rgba(0, 243, 255, 0.2);
-            box-shadow: 0 0 15px var(--neon-cyan);
+            font-size: 0.7rem;
         }
 
         .overlay-bg { 
@@ -793,105 +748,67 @@
             flex-direction: column; 
             justify-content: center; 
             align-items: center;
-            padding: 30px; 
+            padding: 20px; 
             border: 2px solid var(--neon-cyan);
             clip-path: polygon(10% 0, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%);
-            backdrop-filter: blur(10px);
         }
         .modal.hidden { 
             display: none; 
-        }
-        .modal h3 {
-            color: var(--neon-cyan);
-            margin-bottom: 20px;
         }
         .modal input {
             width: 100%; 
             background: rgba(0,0,0,0.6); 
             border: 1px solid var(--neon-cyan);
             color: var(--neon-cyan); 
-            padding: 15px; 
+            padding: 10px; 
             font-family: var(--font-main); 
-            margin-bottom: 15px;
-            font-size: 16px;
-        }
-        .modal-btns { 
-            display: flex; 
-            gap: 15px; 
-            width: 100%; 
-            margin-top: 20px; 
-        }
-        .btn-modal { 
-            flex: 1; 
-            padding: 15px; 
-            cursor: pointer; 
-            border: none; 
-            font-family: var(--font-head); 
-            text-transform: uppercase;
+            margin-bottom: 10px;
             font-size: 14px;
         }
-        .btn-confirm { 
-            background: var(--neon-cyan); 
-            color: #000; 
-            box-shadow: 0 0 20px var(--neon-cyan);
-        }
-        .btn-cancel { 
-            background: #333; 
-            color: #fff; 
-        }
-        .btn-delete {
-            background: var(--neon-pink);
-            color: #fff;
-            box-shadow: 0 0 20px var(--neon-pink);
-        }
 
-        /* === MODAL CONFIRM DELETE === */
-        .confirm-delete-modal {
-            text-align: center;
-        }
-        .confirm-delete-modal p {
-            margin: 20px 0;
-            color: var(--text-tech);
-        }
-
-        .status-badge {
+        /* === NOUVEAU: Les trois traits (menu) en bas === */
+        .three-dots-menu {
             position: absolute;
-            top: max(15px, var(--safe-area-top) + 50px);
-            right: 15px;
-            padding: 5px 10px;
-            background: rgba(0,0,0,0.7);
+            bottom: 100px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            background: rgba(0,0,0,0.6);
             border: 1px solid var(--neon-cyan);
-            color: var(--neon-cyan);
-            font-size: 0.6rem;
-            z-index: 101;
             border-radius: 3px;
-        }
-
-        /* Camera Off Placeholder */
-        .camera-placeholder {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #0a0a1a, #1a1a2e);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            z-index: 90;
+            backdrop-filter: blur(5px);
+        }
+        .three-dots-menu span {
+            width: 4px;
+            height: 4px;
+            background: var(--neon-cyan);
+            border-radius: 50%;
+            display: block;
+        }
+        .three-dots-menu:hover {
+            background: rgba(0,243,255,0.2);
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        /* Statut déplacé en bas */
+        .status-badge-bottom {
+            position: absolute;
+            bottom: 95px;
+            left: 10px;
+            padding: 3px 6px;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid var(--neon-cyan);
             color: var(--neon-cyan);
-            z-index: 7;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
-        }
-        .camera-placeholder.active {
-            opacity: 1;
-        }
-        .camera-placeholder i {
-            font-size: 4rem;
-            margin-bottom: 15px;
-            text-shadow: 0 0 20px var(--neon-cyan);
+            font-size: 0.5rem;
+            z-index: 90;
+            border-radius: 2px;
         }
 
         /* Animations */
@@ -899,14 +816,10 @@
             0% { transform: translate(-50%, -50%) scale(0); opacity: 1; } 
             100% { transform: translate(-50%, -200%) scale(2); opacity: 0; } 
         }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.7; transform: scale(1.1); }
-        }
         .floating-icon {
             position: absolute;
             color: var(--neon-pink);
-            font-size: 2rem;
+            font-size: 1.2rem;
             z-index: 200;
             pointer-events: none;
             animation: floatUp 1s ease-out forwards;
@@ -919,13 +832,6 @@
     <div class="grid-bg"></div>
     <div class="vignette"></div>
     <div class="overlay-bg" id="overlayBg" onclick="UI.toggleSidebar(false)"></div>
-
-    <!-- Camera Off Placeholder (global) -->
-    <div class="camera-placeholder" id="cameraPlaceholder">
-        <i class="fas fa-video-slash"></i>
-        <div>CAMÉRA DÉSACTIVÉE</div>
-        <div style="font-size:0.6rem; margin-top:10px;">Mode chat uniquement</div>
-    </div>
 
     <!-- === VUE 1: LOGIN === -->
     <div id="view-login" class="view active">
@@ -949,87 +855,82 @@
         </div>
     </div>
 
-    <!-- === SIDEBAR AVEC GESTION DES CONTACTS === -->
+    <!-- === SIDEBAR AVEC ID COMPLET === -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <h2 style="margin:0; color:var(--neon-cyan)">GLEAPHE NET</h2>
-            <div style="font-size:0.7rem; margin-top:5px; color:#888;">USER: <span id="sidebarMyName" style="color:#fff">UNKNOWN</span></div>
-            <div class="my-peer-id" id="sidebarMyId">...</div>
+            <h2 style="margin:0; color:var(--neon-cyan); font-size:1.1rem;">GLEAPHE NET</h2>
+            <div style="font-size:0.6rem; margin-top:3px; color:#888;">USER: <span id="sidebarMyName" style="color:#fff">UNKNOWN</span></div>
+        </div>
+        
+        <!-- ID complet et copiable -->
+        <div class="my-id-container">
+            <div class="my-id-label">MON ID P2P</div>
+            <div class="my-id-value" id="fullPeerId">...</div>
+            <div class="copy-id-btn" onclick="App.copyMyId()">
+                <i class="fas fa-copy"></i> COPIER L'ID
+            </div>
         </div>
         
         <!-- Section Utilisateurs Connectés -->
         <div class="online-users-section">
             <div class="section-title">
-                <i class="fas fa-circle" style="color:var(--online); font-size:0.6rem;"></i> 
+                <i class="fas fa-circle" style="color:var(--online);"></i> 
                 EN LIGNE (<span id="onlineCount">0</span>)
             </div>
-            <div id="onlineUsersList">
-                <!-- Les utilisateurs connectés seront injectés ici -->
-            </div>
+            <div id="onlineUsersList"></div>
         </div>
         
         <!-- Bouton Ajouter Contact -->
         <div class="add-contact-btn" onclick="UI.openAddContactModal()">
-            <i class="fas fa-plus-circle"></i> AJOUTER UN CONTACT
+            <i class="fas fa-plus-circle"></i> AJOUTER CONTACT
         </div>
         
         <!-- Section Contacts -->
         <div class="contacts-section">
             <div class="section-title">
-                <i class="fas fa-address-book"></i> 
-                MES CONTACTS
+                <i class="fas fa-address-book"></i> MES CONTACTS
             </div>
-            <div id="contactList">
-                <!-- Les contacts seront injectés ici avec bouton supprimer -->
-            </div>
+            <div id="contactList"></div>
         </div>
     </div>
 
-    <!-- === MODAL ADD CONTACT === -->
+    <!-- === MODALS === -->
     <div class="modal hidden" id="modalAddContact">
-        <h3>NOUVEAU CONTACT</h3>
+        <h3 style="font-size:1.1rem;">NOUVEAU CONTACT</h3>
         <input type="text" id="newContactName" placeholder="NOM">
         <input type="text" id="newContactId" placeholder="ID CIBLE">
-        <div class="modal-btns">
-            <button class="btn-modal btn-cancel" onclick="UI.closeModal('modalAddContact')">ANNULER</button>
-            <button class="btn-modal btn-confirm" onclick="App.addContact()">SAUVEGARDER</button>
+        <div style="display:flex; gap:10px; width:100%; margin-top:10px;">
+            <button class="btn-modal btn-cancel" onclick="UI.closeModal('modalAddContact')" style="flex:1; padding:8px;">ANNULER</button>
+            <button class="btn-modal btn-confirm" onclick="App.addContact()" style="flex:1; padding:8px;">AJOUTER</button>
         </div>
     </div>
 
-    <!-- === MODAL CONFIRM DELETE CONTACT === -->
     <div class="modal hidden" id="modalConfirmDelete">
-        <h3 style="color:var(--neon-pink);">SUPPRIMER CONTACT</h3>
-        <div style="margin:20px 0; text-align:center;">
-            <p>Êtes-vous sûr de vouloir supprimer</p>
-            <p style="color:var(--neon-cyan); font-size:1.2rem; margin-top:10px;" id="deleteContactName"></p>
+        <h3 style="color:var(--neon-pink); font-size:1.1rem;">SUPPRIMER</h3>
+        <div style="margin:15px 0; text-align:center; font-size:0.8rem;">
+            <p>Supprimer <span style="color:var(--neon-cyan);" id="deleteContactName"></span> ?</p>
         </div>
-        <div class="modal-btns">
-            <button class="btn-modal btn-cancel" onclick="UI.closeModal('modalConfirmDelete')">ANNULER</button>
-            <button class="btn-modal btn-delete" onclick="App.confirmDeleteContact()">SUPPRIMER</button>
+        <div style="display:flex; gap:10px; width:100%;">
+            <button class="btn-modal btn-cancel" onclick="UI.closeModal('modalConfirmDelete')" style="flex:1;">ANNULER</button>
+            <button class="btn-modal btn-delete" onclick="App.confirmDeleteContact()" style="flex:1;">SUPPRIMER</button>
         </div>
     </div>
 
-    <!-- === MODAL INCOMING CALL === -->
     <div class="modal hidden" id="modalIncomingCall">
-        <h3 style="color:var(--neon-pink);">APPEL ENTRANT</h3>
-        <div id="incomingCallerInfo" style="margin:20px 0; color:var(--neon-cyan);">...</div>
-        <div class="modal-btns">
-            <button class="btn-modal btn-cancel" onclick="App.declineCall()">REFUSER</button>
-            <button class="btn-modal btn-confirm" onclick="App.acceptCall()">ACCEPTER</button>
+        <h3 style="color:var(--neon-pink); font-size:1.1rem;">APPEL ENTRANT</h3>
+        <div id="incomingCallerInfo" style="margin:15px 0; color:var(--neon-cyan); font-size:0.8rem;">...</div>
+        <div style="display:flex; gap:10px; width:100%;">
+            <button class="btn-modal btn-cancel" onclick="App.declineCall()" style="flex:1;">REFUSER</button>
+            <button class="btn-modal btn-confirm" onclick="App.acceptCall()" style="flex:1;">ACCEPTER</button>
         </div>
     </div>
 
-    <!-- === MODAL PERMISSION ERROR === -->
     <div class="modal hidden" id="modalPermissionError">
-        <h3 style="color:var(--neon-pink);">ERREUR PERMISSION</h3>
-        <div style="margin:20px; text-align:center; color:var(--text-tech);">
-            <i class="fas fa-exclamation-triangle" style="font-size:3rem; color:var(--neon-pink); margin-bottom:20px;"></i>
+        <h3 style="color:var(--neon-pink); font-size:1.1rem;">ERREUR</h3>
+        <div style="margin:15px; text-align:center; font-size:0.8rem;">
             <p>Impossible d'accéder à la caméra/micro.</p>
-            <p style="font-size:0.8rem;">Vérifiez les permissions dans votre navigateur.</p>
         </div>
-        <div class="modal-btns">
-            <button class="btn-modal btn-confirm" onclick="UI.closeModal('modalPermissionError')">OK</button>
-        </div>
+        <button class="btn-modal btn-confirm" onclick="UI.closeModal('modalPermissionError')" style="width:100%; padding:10px;">OK</button>
     </div>
 
     <!-- === VUE 2: MAIN APP === -->
@@ -1042,10 +943,17 @@
         <div class="hud-corner bl"></div>
         <div class="hud-corner br"></div>
 
-        <!-- Status Badge -->
-        <div class="status-badge" id="connectionStatus">DÉCONNECTÉ</div>
+        <!-- Status déplacé en bas -->
+        <div class="status-badge-bottom" id="connectionStatus">DÉCONNECTÉ</div>
 
-        <!-- TOP BAR -->
+        <!-- Les trois traits (menu) -->
+        <div class="three-dots-menu" onclick="UI.toggleSidebar(true)">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+
+        <!-- TOP BAR - Allégée -->
         <div class="top-bar">
             <div class="status-line">
                 <span>P2P: <span id="p2pStatus" style="color:#ff0000">OFFLINE</span></span>
@@ -1053,11 +961,8 @@
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <div class="brand">GLEAPHE <span style="color:var(--neon-cyan)">LIVE</span></div>
-                <div style="display:flex; gap:10px; align-items:center;">
-                    <div class="online-badge" onclick="UI.toggleSidebar(true)">
-                        <i class="fas fa-circle"></i> <span id="headerOnlineCount">0</span>
-                    </div>
-                    <button class="menu-btn" onclick="UI.toggleSidebar(true)"><i class="fas fa-users"></i></button>
+                <div class="online-badge" onclick="UI.toggleSidebar(true)">
+                    <i class="fas fa-circle"></i> <span id="headerOnlineCount">0</span>
                 </div>
             </div>
         </div>
@@ -1068,41 +973,42 @@
             
             <div class="pip-container">
                 <video id="localVideo" autoplay playsinline muted></video>
+                <div class="cam-off-text" id="camOffText" style="display: none;">OFF</div>
             </div>
 
             <div class="profile-card" id="profileCard">
                 <div class="p-name" id="matchName">CIBLE INCONNUE</div>
-                <div class="p-meta"><i class="fas fa-map-marker-alt"></i> <span id="matchLoc">EN ATTENTE...</span></div>
+                <div class="p-meta" id="matchLoc">EN ATTENTE...</div>
             </div>
 
             <div class="chat-overlay" id="chatOverlay"></div>
         </div>
 
-        <!-- CONTROLS -->
+        <!-- CONTROLS DOCK -->
         <div class="controls-dock">
-            <div class="cyber-btn-circle" onclick="App.toggleCamera()" id="btnCamera">
+            <div class="cyber-btn-circle" onclick="App.toggleCamera()" id="btnCamera" title="Caméra">
                 <i class="fas fa-video"></i>
             </div>
-            <div class="cyber-btn-circle" id="btnMic" onclick="App.toggleMic()">
+            <div class="cyber-btn-circle" id="btnMic" onclick="App.toggleMic()" title="Micro">
                 <i class="fas fa-microphone"></i>
             </div>
             
             <div class="btn-main-core" id="btnMain" onclick="App.mainAction()">
-                <i class="fas fa-play" style="font-size:1.5rem; margin-bottom:5px;"></i>
-                <div style="font-size:0.7rem;" id="btnMainText">START</div>
+                <i class="fas fa-play" style="font-size:1.1rem; margin-bottom:2px;"></i>
+                <div style="font-size:0.55rem;" id="btnMainText">START</div>
             </div>
             
-            <div class="cyber-btn-circle" style="color:var(--neon-cyan)" onclick="UI.toggleChat()">
-                <i class="fas fa-comment-dots"></i>
+            <div class="cyber-btn-circle" onclick="App.sendGift()" style="color:var(--neon-pink)" title="Cadeau">
+                <i class="fas fa-biohazard"></i>
             </div>
-            <div class="cyber-btn-circle" onclick="App.flipCamera()">
-                <i class="fas fa-sync"></i>
+            <div class="cyber-btn-circle" onclick="UI.toggleChat()" title="Chat">
+                <i class="fas fa-comment-dots"></i>
             </div>
         </div>
 
         <!-- CHAT INPUT -->
         <div class="chat-input-area" id="chatInputArea">
-            <input type="text" class="chat-input" id="msgInput" placeholder="> ENTRER DONNÉES..." autocomplete="off">
+            <input type="text" class="chat-input" id="msgInput" placeholder="> MESSAGE..." autocomplete="off">
             <div class="btn-send" onclick="App.sendMessage()">
                 <i class="fas fa-paper-plane"></i>
             </div>
@@ -1114,26 +1020,17 @@
 <script>
     /* --- CONFIGURATION P2P --- */
     const PEER_CONFIG = {
-        debug: 2,
+        debug: 1,
         config: {
             iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
-                { urls: 'stun:stun2.l.google.com:19302' },
-                { urls: 'stun:stun3.l.google.com:19302' },
-                { urls: 'stun:stun4.l.google.com:19302' },
                 {
                     urls: 'turn:openrelay.metered.ca:80',
                     username: 'openrelayproject',
                     credential: 'openrelayproject'
-                },
-                {
-                    urls: 'turn:openrelay.metered.ca:443',
-                    username: 'openrelayproject',
-                    credential: 'openrelayproject'
                 }
-            ],
-            sdpSemantics: 'unified-plan'
+            ]
         }
     };
 
@@ -1144,25 +1041,22 @@
             stream: null,
             peer: null,
             currentCall: null,
-            mode: 'idle', // idle, calling, in-call
+            mode: 'idle',
             contacts: [],
             onlineUsers: [],
             isMicOn: true,
             isCameraOn: true,
             pendingCall: null,
             currentPeerId: null,
-            hasPermissions: false,
             contactToDelete: null
         },
 
         init: function() {
-            // Horloge
             setInterval(() => {
                 const now = new Date();
                 document.getElementById('clock').innerText = now.toLocaleTimeString();
             }, 1000);
 
-            // Charger les contacts
             const savedContacts = localStorage.getItem('nexus_contacts');
             if (savedContacts) {
                 try {
@@ -1172,19 +1066,26 @@
                 }
             }
 
-            // Event listeners
             document.getElementById('msgInput').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') this.sendMessage();
+                if (e.key === 'Enter') {
+                    this.sendMessage();
+                }
             });
 
-            // Pré-remplir le pseudo
             const savedPseudo = localStorage.getItem('nexus_pseudo');
             if (savedPseudo) {
                 document.getElementById('loginPseudo').value = savedPseudo;
             }
         },
 
-        // === DEMANDER PERMISSIONS ===
+        copyMyId: function() {
+            if (this.state.currentPeerId) {
+                navigator.clipboard.writeText(this.state.currentPeerId).then(() => {
+                    alert('ID copié !');
+                });
+            }
+        },
+
         requestPermissions: async function() {
             const pseudo = document.getElementById('loginPseudo').value.trim();
             if (!pseudo) {
@@ -1199,11 +1100,7 @@
                 document.getElementById('permissionStatus').innerHTML = '⏳ DEMANDE...';
                 
                 this.state.stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: {
-                        width: { ideal: 640 },
-                        height: { ideal: 480 },
-                        facingMode: "user"
-                    }, 
+                    video: { width: { ideal: 640 }, height: { ideal: 480 } }, 
                     audio: true 
                 });
 
@@ -1211,32 +1108,26 @@
                 this.initConnection();
 
             } catch(e) {
-                console.error('Erreur permission:', e);
                 document.getElementById('permissionStatus').innerHTML = '❌ ERREUR';
                 document.getElementById('modalPermissionError').classList.remove('hidden');
             }
         },
 
-        // === INITIALISER CONNEXION P2P ===
         initConnection: function() {
             const localVideo = document.getElementById('localVideo');
             localVideo.srcObject = this.state.stream;
 
-            // Initialiser PeerJS
             this.state.peer = new Peer(PEER_CONFIG);
 
             this.state.peer.on('open', (id) => {
-                console.log('Mon ID Peer:', id);
                 this.state.currentPeerId = id;
-                
                 this.addOnlineUser(this.state.pseudo, id);
                 
-                document.getElementById('sidebarMyId').innerHTML = `ID: ${id}`;
                 document.getElementById('sidebarMyName').innerText = this.state.pseudo;
+                document.getElementById('fullPeerId').innerText = id;
                 document.getElementById('p2pStatus').innerText = 'ONLINE';
                 document.getElementById('p2pStatus').style.color = '#00ff00';
                 document.getElementById('connectionStatus').innerText = 'CONNECTÉ';
-                document.getElementById('connectionStatus').style.color = '#00ff00';
                 
                 setInterval(() => this.broadcastOnlineStatus(), 5000);
                 this.broadcastOnlineStatus();
@@ -1254,32 +1145,18 @@
                 });
             });
 
-            this.state.peer.on('error', (err) => {
-                console.error('Peer error:', err);
-            });
-
             document.getElementById('view-login').classList.remove('active');
             document.getElementById('view-main').classList.add('active');
             UI.renderContacts();
             UI.renderOnlineUsers();
         },
 
-        // === GESTION DES UTILISATEURS CONNECTÉS ===
         addOnlineUser: function(pseudo, peerId) {
             const existing = this.state.onlineUsers.find(u => u.peerId === peerId);
             if (!existing && peerId !== this.state.currentPeerId) {
-                this.state.onlineUsers.push({ 
-                    pseudo: pseudo, 
-                    peerId: peerId,
-                    lastSeen: Date.now()
-                });
+                this.state.onlineUsers.push({ pseudo, peerId, lastSeen: Date.now() });
                 UI.renderOnlineUsers();
             }
-        },
-
-        removeOnlineUser: function(peerId) {
-            this.state.onlineUsers = this.state.onlineUsers.filter(u => u.peerId !== peerId);
-            UI.renderOnlineUsers();
         },
 
         broadcastOnlineStatus: function() {
@@ -1293,17 +1170,13 @@
                 
                 Object.keys(this.state.peer.connections).forEach(peerId => {
                     this.state.peer.connections[peerId].forEach(conn => {
-                        if (conn.open) {
-                            conn.send(status);
-                        }
+                        if (conn.open) conn.send(status);
                     });
                 });
             }
             
             const now = Date.now();
-            this.state.onlineUsers = this.state.onlineUsers.filter(u => 
-                (now - u.lastSeen) < 15000
-            );
+            this.state.onlineUsers = this.state.onlineUsers.filter(u => (now - u.lastSeen) < 15000);
             UI.renderOnlineUsers();
         },
 
@@ -1340,9 +1213,7 @@
 
         confirmDeleteContact: function() {
             if (this.state.contactToDelete) {
-                this.state.contacts = this.state.contacts.filter(c => 
-                    c.id !== this.state.contactToDelete.id
-                );
+                this.state.contacts = this.state.contacts.filter(c => c.id !== this.state.contactToDelete.id);
                 localStorage.setItem('nexus_contacts', JSON.stringify(this.state.contacts));
                 UI.renderContacts();
                 UI.closeModal('modalConfirmDelete');
@@ -1379,30 +1250,19 @@
                     btnMain.querySelector('i').className = 'fas fa-stop';
                     
                     UI.setProfile(name, 'EN COMMUNICATION');
-                    UI.addMessage('SYSTÈME: Appel établi', false);
+                    UI.addMessage('Appel établi', false);
                 });
 
                 call.on('data', (data) => {
-                    if (data.type === 'message') {
-                        UI.addMessage(data.text, false);
-                    } else if (data.type === 'gift') {
-                        UI.spawnEffect();
-                    }
+                    if (data.type === 'message') UI.addMessage(data.text, false);
+                    else if (data.type === 'gift') UI.spawnEffect();
                 });
 
-                call.on('close', () => {
-                    this.endCall();
-                });
-
-                call.on('error', (err) => {
-                    console.error('Call error:', err);
-                    this.endCall();
-                });
+                call.on('close', () => this.endCall());
+                call.on('error', () => this.endCall());
 
                 this.state.currentCall = call;
-
             } catch(e) {
-                console.error('Erreur appel:', e);
                 this.endCall();
             }
         },
@@ -1413,11 +1273,8 @@
 
         // === BOUTON PRINCIPAL ===
         mainAction: function() {
-            if (this.state.mode === 'in-call') {
-                this.endCall();
-            } else {
-                this.startIdle();
-            }
+            if (this.state.mode === 'in-call') this.endCall();
+            else this.startIdle();
         },
 
         startIdle: function() {
@@ -1436,7 +1293,6 @@
             remoteVideo.classList.remove('active');
             
             UI.setProfile('EN ATTENTE', 'PRÊT');
-            UI.addMessage('SYSTÈME: Mode attente activé', false);
         },
 
         endCall: function() {
@@ -1461,7 +1317,7 @@
             btnMain.querySelector('i').className = 'fas fa-hourglass-half';
             
             UI.setProfile('EN ATTENTE', 'PRÊT');
-            UI.addMessage('SYSTÈME: Appel terminé', false);
+            UI.addMessage('Appel terminé', false);
         },
 
         handleIncomingCall: function(call) {
@@ -1498,20 +1354,15 @@
                 btnMain.querySelector('i').className = 'fas fa-stop';
                 
                 UI.setProfile(call.peer.substring(0,8), 'EN COMMUNICATION');
-                UI.addMessage('SYSTÈME: Appel accepté', false);
+                UI.addMessage('Appel accepté', false);
             });
 
             call.on('data', (data) => {
-                if (data.type === 'message') {
-                    UI.addMessage(data.text, false);
-                } else if (data.type === 'gift') {
-                    UI.spawnEffect();
-                }
+                if (data.type === 'message') UI.addMessage(data.text, false);
+                else if (data.type === 'gift') UI.spawnEffect();
             });
 
-            call.on('close', () => {
-                this.endCall();
-            });
+            call.on('close', () => this.endCall());
 
             this.state.pendingCall = null;
         },
@@ -1522,41 +1373,35 @@
                 this.state.pendingCall = null;
             }
             UI.closeModal('modalIncomingCall');
-            UI.addMessage('SYSTÈME: Appel refusé', false);
+            UI.addMessage('Appel refusé', false);
         },
 
-        // === NOUVELLE FONCTION: DÉSACTIVER CAMÉRA ===
         toggleCamera: function() {
             if (!this.state.stream) return;
             
             this.state.isCameraOn = !this.state.isCameraOn;
             
-            // Désactiver/activer les tracks vidéo
             this.state.stream.getVideoTracks().forEach(track => {
                 track.enabled = this.state.isCameraOn;
             });
             
-            // Mettre à jour l'UI
             const localVideo = document.getElementById('localVideo');
             const btnCamera = document.getElementById('btnCamera');
-            const cameraPlaceholder = document.getElementById('cameraPlaceholder');
+            const camOffText = document.getElementById('camOffText');
             
             if (this.state.isCameraOn) {
                 localVideo.classList.remove('camera-off');
                 btnCamera.classList.remove('camera-off');
                 btnCamera.innerHTML = '<i class="fas fa-video"></i>';
-                cameraPlaceholder.classList.remove('active');
-                UI.addMessage('SYSTÈME: Caméra activée', false);
+                camOffText.style.display = 'none';
             } else {
                 localVideo.classList.add('camera-off');
                 btnCamera.classList.add('camera-off');
                 btnCamera.innerHTML = '<i class="fas fa-video-slash"></i>';
-                cameraPlaceholder.classList.add('active');
-                UI.addMessage('SYSTÈME: Caméra désactivée (mode chat)', false);
+                camOffText.style.display = 'block';
             }
         },
 
-        // === UTILS ===
         toggleMic: function() {
             if (this.state.stream) {
                 this.state.isMicOn = !this.state.isMicOn;
@@ -1569,24 +1414,10 @@
             }
         },
 
-        flipCamera: function() {
-            const localVideo = document.getElementById('localVideo');
-            if (localVideo) {
-                const currentTransform = localVideo.style.transform;
-                localVideo.style.transform = currentTransform.includes('scaleX(-1)') ? 'scaleX(1)' : 'scaleX(-1)';
-            }
-        },
-
         sendGift: function() {
             if (this.state.mode !== 'in-call' || !this.state.currentCall) return;
-            
             UI.spawnEffect();
-            
-            try {
-                this.state.currentCall.send({ type: 'gift' });
-            } catch(e) {
-                console.error('Erreur envoi gift:', e);
-            }
+            try { this.state.currentCall.send({ type: 'gift' }); } catch(e) {}
         },
 
         sendMessage: function() {
@@ -1601,9 +1432,7 @@
                     UI.addMessage(text, true);
                     input.value = '';
                     UI.toggleChat(false);
-                } catch(e) {
-                    console.error('Erreur envoi message:', e);
-                }
+                } catch(e) {}
             } else {
                 alert("PAS EN COMMUNICATION");
             }
@@ -1662,12 +1491,7 @@
             bubble.innerText = text;
             container.appendChild(bubble);
             container.scrollTop = container.scrollHeight;
-            
-            setTimeout(() => {
-                if (bubble.parentNode) {
-                    bubble.remove();
-                }
-            }, 30000);
+            setTimeout(() => { if (bubble.parentNode) bubble.remove(); }, 30000);
         },
 
         spawnEffect: function() {
@@ -1694,7 +1518,7 @@
             headerCount.innerText = otherUsers.length;
             
             if (otherUsers.length === 0) {
-                list.innerHTML = '<div style="text-align:center; color:#666; padding:10px;">AUCUN UTILISATEUR CONNECTÉ</div>';
+                list.innerHTML = '<div style="text-align:center; color:#666; padding:3px;">AUCUN</div>';
                 return;
             }
 
@@ -1702,11 +1526,7 @@
                 <div class="user-list-item" onclick="App.callOnlineUser('${u.peerId}', '${u.pseudo}')">
                     <div class="user-status-dot"></div>
                     <div class="user-avatar-small">${u.pseudo.charAt(0).toUpperCase()}</div>
-                    <div class="user-info-small">
-                        <div class="user-name-small">${u.pseudo}</div>
-                        <div class="user-peer-small">${u.peerId.substring(0, 8)}...</div>
-                    </div>
-                    <div style="color:var(--neon-cyan)"><i class="fas fa-phone"></i></div>
+                    <div style="flex:1; font-size:0.65rem;">${u.pseudo}</div>
                 </div>
             `).join('');
         },
@@ -1716,17 +1536,14 @@
             if (!list) return;
 
             if (App.state.contacts.length === 0) {
-                list.innerHTML = '<div style="text-align:center; color:#666; padding:20px;">AUCUN CONTACT</div>';
+                list.innerHTML = '<div style="text-align:center; color:#666; padding:3px;">AUCUN</div>';
                 return;
             }
 
             list.innerHTML = App.state.contacts.map(c => `
                 <div class="contact-item">
                     <div class="contact-avatar">${c.name.charAt(0).toUpperCase()}</div>
-                    <div class="contact-info">
-                        <div class="contact-name">${c.name}</div>
-                        <div class="contact-id">${c.id.substring(0, 8)}...</div>
-                    </div>
+                    <div style="flex:1; font-size:0.65rem;">${c.name}</div>
                     <div class="contact-actions">
                         <div class="contact-call-btn" onclick="event.stopPropagation(); App.callContact('${c.id}', '${c.name}')">
                             <i class="fas fa-phone"></i>
@@ -1740,9 +1557,7 @@
         }
     };
 
-    // Initialisation
     window.onload = () => App.init();
 </script>
 </body>
-
 </html>
