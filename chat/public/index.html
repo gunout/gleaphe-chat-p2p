@@ -6,7 +6,7 @@
     <title>Gleaphe Chat - Communication P2P</title>
     
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
@@ -407,7 +407,7 @@
         </div>
         
         <div class="input-group">
-            <input type="text" id="pseudo" placeholder="Ton pseudo" value="Gleapher_" + Math.floor(Math.random()*1000)>
+            <input type="text" id="pseudo" placeholder="Ton pseudo" value="User_" + Math.floor(Math.random()*1000)>
         </div>
         
         <div class="input-group">
@@ -466,7 +466,7 @@
             <div class="avatar" id="avatar">G</div>
             <div style="font-weight: bold;" id="sidebar-pseudo"></div>
             <div class="my-id" id="my-id">Chargement...</div>
-            <button onclick="copyId()" style="padding:5px 15px; background:#667eea; color:white; border:none; border-radius:5px; cursor:pointer;">
+            <button onclick="copyId()" style="padding:5px 15px; background:#667eea; color:white; border:none; border-radius:5px; cursor:pointer; margin-top:5px;">
                 📋 Copier mon ID
             </button>
         </div>
@@ -488,8 +488,6 @@
 
 <script>
     // ===== CONFIGURATION =====
-    const SERVER_URL = ''; // Utilise l'URL actuelle
-    
     let peer = null;
     let socket = null;
     let localStream = null;
@@ -515,11 +513,24 @@
             });
             document.getElementById('local-video').srcObject = localStream;
 
-            // PeerJS
-            peer = new Peer();
+            // PeerJS avec configuration personnalisée
+            peer = new Peer({
+                host: window.location.hostname,
+                port: window.location.port || (window.location.protocol === 'https:' ? 443 : 80),
+                path: '/peerjs',
+                secure: window.location.protocol === 'https:',
+                debug: 3,
+                config: {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:stun2.l.google.com:19302' }
+                    ]
+                }
+            });
 
             peer.on('open', (peerId) => {
-                console.log('✅ PeerJS ID:', peerId);
+                console.log('✅ PeerJS connecté, ID:', peerId);
                 document.getElementById('my-id').innerText = peerId;
                 document.getElementById('sidebar-pseudo').innerText = pseudo;
                 document.getElementById('avatar').innerText = pseudo.charAt(0).toUpperCase();
@@ -537,6 +548,11 @@
                 document.getElementById('main-screen').style.display = 'block';
             });
 
+            peer.on('error', (err) => {
+                console.error('❌ Erreur PeerJS:', err);
+                showNotification('Erreur PeerJS: ' + err.type);
+            });
+
             peer.on('call', (call) => {
                 if (confirm(`📞 Appel entrant de ${call.peer}`)) {
                     call.answer(localStream);
@@ -545,25 +561,32 @@
             });
 
         } catch(e) {
+            console.error('Erreur:', e);
             alert('Erreur: ' + e.message);
         }
     }
 
-    // ===== SERVEUR =====
+    // ===== SERVEUR SOCKET.IO =====
     function connectToServer() {
-        socket = io(SERVER_URL, {
-            transports: ['websocket']
+        socket = io({
+            transports: ['websocket', 'polling'],
+            reconnection: true,
+            reconnectionAttempts: 10
         });
 
         socket.on('connect', () => {
-            console.log('✅ Connecté au serveur Gleaphe');
+            console.log('✅ Socket.IO connecté');
             socket.emit('user-connect', {
                 peerId: currentUser.peerId,
                 pseudo: currentUser.pseudo
             });
+            
+            // Demander la liste immédiatement
+            socket.emit('get-users');
         });
 
         socket.on('users-update', (users) => {
+            console.log('📋 Liste reçue:', users);
             onlineUsers = users.filter(u => u.peerId !== currentUser.peerId);
             document.getElementById('online-count').innerText = onlineUsers.length;
             document.getElementById('sidebar-count').innerText = onlineUsers.length;
@@ -574,13 +597,14 @@
             showNotification(data.message);
         });
 
-        socket.on('new-message', (data) => {
-            addMessage(data.fromPseudo + ': ' + data.text, false);
+        socket.on('connect_error', (error) => {
+            console.error('❌ Erreur Socket.IO:', error);
+            showNotification('Erreur de connexion au serveur');
         });
 
-        socket.on('gift-received', (data) => {
-            spawnEffect();
-            showNotification(`${data.fromPseudo} t'a envoyé un cadeau !`);
+        socket.on('disconnect', () => {
+            console.log('❌ Socket.IO déconnecté');
+            showNotification('Connexion perdue, reconnexion...');
         });
     }
 
@@ -607,6 +631,8 @@
 
     // ===== APPELS =====
     function callUser(peerId) {
+        if (!peer) return;
+        
         const call = peer.call(peerId, localStream);
         setupCall(call);
         toggleSidebar();
@@ -630,6 +656,11 @@
             document.getElementById('remote-video').srcObject = null;
             currentCall = null;
             document.getElementById('call-btn').innerHTML = '<i class="fas fa-phone"></i>';
+        });
+
+        call.on('error', (err) => {
+            console.error('Erreur appel:', err);
+            showNotification('Erreur pendant l\'appel');
         });
 
         document.getElementById('call-btn').innerHTML = '<i class="fas fa-phone-slash"></i>';
@@ -669,6 +700,14 @@
             const enabled = localStream.getVideoTracks()[0].enabled;
             localStream.getVideoTracks()[0].enabled = !enabled;
             document.getElementById('video-btn').style.color = !enabled ? '#667eea' : '#999';
+            
+            // Indicateur visuel
+            const localVideo = document.getElementById('local-video');
+            if (!enabled) {
+                localVideo.style.filter = 'grayscale(100%)';
+            } else {
+                localVideo.style.filter = 'none';
+            }
         }
     }
 
@@ -699,10 +738,20 @@
         effect.style.color = '#ff4757';
         effect.innerHTML = '🎁';
         effect.style.animation = 'floatUp 1s ease-out';
+        effect.style.zIndex = '1000';
         document.getElementById('main-screen').appendChild(effect);
         setTimeout(() => effect.remove(), 1000);
     }
+
+    // Animation pour les effets
+    const style = document.createElement('style');
+    style.innerHTML = `
+        @keyframes floatUp {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+            100% { transform: translate(-50%, -200%) scale(2); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
 </script>
 </body>
 </html>
-
