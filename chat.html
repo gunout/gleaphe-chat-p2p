@@ -1,0 +1,1747 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>GLEAPHE CHAT | P2P LIVE</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* --- CORE VARIABLES --- */
+        :root {
+            --bg-deep: #020205;
+            --bg-hud: rgba(10, 20, 30, 0.85);
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff0055;
+            --neon-purple: #bc13fe;
+            --text-tech: #e0f7fa;
+            --glass: rgba(0, 243, 255, 0.05);
+            --font-main: 'Share Tech Mono', monospace;
+            --font-head: 'Orbitron', sans-serif;
+            --border-tech: 1px solid rgba(0, 243, 255, 0.3);
+            --safe-area-bottom: env(safe-area-inset-bottom);
+            --safe-area-top: env(safe-area-inset-top);
+            --online: #00ff88;
+        }
+
+        * { 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; 
+            margin: 0; 
+            padding: 0; 
+        }
+        
+        body {
+            margin: 0; 
+            padding: 0; 
+            background-color: var(--bg-deep); 
+            color: var(--text-tech);
+            font-family: var(--font-main); 
+            height: 100dvh; 
+            overflow: hidden;
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            position: fixed;
+            width: 100%;
+        }
+
+        /* --- BACKGROUND FX --- */
+        .grid-bg {
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 243, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+            transform: perspective(500px) rotateX(60deg) scale(2);
+            animation: gridMove 20s linear infinite;
+            opacity: 0.2; 
+            z-index: 0; 
+            pointer-events: none;
+        }
+        @keyframes gridMove { 
+            0% { transform: perspective(500px) rotateX(60deg) scale(2) translateY(0); } 
+            100% { transform: perspective(500px) rotateX(60deg) scale(2) translateY(40px); } 
+        }
+
+        .vignette {
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            background: radial-gradient(circle, transparent 50%, #000 100%);
+            z-index: 1; 
+            pointer-events: none;
+        }
+
+        /* --- APP CONTAINER --- */
+        #app {
+            width: 100%; 
+            height: 100%; 
+            max-width: 480px;
+            position: relative; 
+            background: rgba(2, 2, 5, 0.8);
+            overflow: hidden; 
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.1);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            z-index: 2;
+        }
+
+        /* --- VIEW SYSTEM --- */
+        .view {
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            transition: opacity 0.3s ease;
+            display: none; 
+            flex-direction: column;
+            z-index: 10;
+            background: var(--bg-deep);
+            overflow: hidden;
+        }
+        .view.active { 
+            display: flex; 
+            z-index: 20; 
+        }
+
+        /* === LOGIN VIEW === */
+        #view-login {
+            justify-content: center; 
+            align-items: center;
+            background: radial-gradient(circle at center, rgba(0, 243, 255, 0.1) 0%, #000 100%);
+            border: 1px solid var(--neon-cyan);
+            margin: 10px; 
+            width: calc(100% - 20px); 
+            height: calc(100% - 20px);
+            clip-path: polygon(10% 0, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%);
+            padding: 20px;
+        }
+
+        .login-logo {
+            font-family: var(--font-head); 
+            font-size: 2.5rem; 
+            text-transform: uppercase;
+            letter-spacing: 4px; 
+            margin-bottom: 30px; 
+            text-shadow: 0 0 10px var(--neon-cyan);
+            animation: flicker 3s infinite;
+            text-align: center;
+        }
+        @keyframes flicker { 
+            0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 1; } 
+            20%, 24%, 55% { opacity: 0.6; } 
+        }
+
+        .tech-input {
+            width: 100%; 
+            background: rgba(0,0,0,0.6); 
+            border: var(--border-tech);
+            color: var(--neon-cyan); 
+            padding: 15px; 
+            font-family: var(--font-main);
+            text-align: center; 
+            margin-bottom: 20px; 
+            clip-path: polygon(5% 0, 100% 0, 100% 70%, 95% 100%, 0 100%, 0 30%);
+            outline: none; 
+            transition: 0.3s;
+            font-size: 16px;
+        }
+        .tech-input:focus { 
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3); 
+            border-color: var(--neon-cyan); 
+        }
+
+        .cyber-btn {
+            width: 100%; 
+            background: var(--neon-pink); 
+            color: #fff; 
+            border: none;
+            padding: 15px; 
+            font-family: var(--font-head); 
+            font-weight: 700; 
+            letter-spacing: 2px;
+            cursor: pointer; 
+            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+            box-shadow: 0 0 20px rgba(255, 0, 85, 0.4);
+            position: relative; 
+            overflow: hidden;
+            font-size: 16px;
+        }
+        .cyber-btn::before {
+            content: ''; 
+            position: absolute; 
+            top: 0; 
+            left: -100%; 
+            width: 100%; 
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: 0.5s;
+        }
+        .cyber-btn:hover::before { left: 100%; }
+
+        .permission-info {
+            font-size: 0.7rem;
+            color: var(--neon-pink);
+            margin: 15px 0;
+            padding: 10px;
+            border: 1px dashed var(--neon-pink);
+            text-align: center;
+        }
+
+        /* === HUD ELEMENTS === */
+        .hud-corner {
+            position: absolute; 
+            width: 30px; 
+            height: 30px;
+            border: 2px solid var(--neon-cyan); 
+            z-index: 45; 
+            pointer-events: none;
+        }
+        .tl { top: 10px; left: 10px; border-right: 0; border-bottom: 0; }
+        .tr { top: 10px; right: 10px; border-left: 0; border-bottom: 0; }
+        .bl { bottom: 10px; left: 10px; border-right: 0; border-top: 0; }
+        .br { bottom: 10px; right: 10px; border-left: 0; border-top: 0; }
+
+        .scanline {
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 2px;
+            background: var(--neon-cyan); 
+            opacity: 0.5; 
+            z-index: 40;
+            animation: scan 4s linear infinite; 
+            pointer-events: none;
+        }
+        @keyframes scan { 
+            0% { top: 0%; opacity: 0; } 
+            10% { opacity: 1; } 
+            90% { opacity: 1; } 
+            100% { top: 100%; opacity: 0; } 
+        }
+
+        /* === TOP BAR (FIXE) === */
+        .top-bar {
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%;
+            padding: 15px; 
+            padding-top: max(15px, var(--safe-area-top));
+            z-index: 100; 
+            background: linear-gradient(180deg, rgba(0,0,0,0.9), transparent);
+            pointer-events: none;
+        }
+        .top-bar > * {
+            pointer-events: auto;
+        }
+        
+        .status-line {
+            display: flex; 
+            justify-content: space-between; 
+            font-size: 0.7rem; 
+            color: var(--neon-cyan);
+            border-bottom: 1px solid rgba(0,243,255,0.3); 
+            padding-bottom: 5px;
+            margin-bottom: 5px;
+        }
+        .brand { 
+            font-family: var(--font-head); 
+            font-size: 1.2rem; 
+            text-shadow: 0 0 5px var(--neon-pink); 
+            color: #fff; 
+        }
+        .menu-btn {
+            background: none; 
+            border: none; 
+            color: var(--neon-cyan); 
+            font-size: 1.2rem; 
+            cursor: pointer;
+        }
+
+        /* Online Users Badge */
+        .online-badge {
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid var(--online);
+            border-radius: 20px;
+            padding: 5px 12px;
+            font-size: 0.7rem;
+            color: var(--online);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+        .online-badge i {
+            font-size: 0.6rem;
+        }
+
+        /* === VIDEO STAGE === */
+        .video-stage { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            overflow: hidden; 
+            background: #000;
+            z-index: 5;
+        }
+        
+        #remoteVideo { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            z-index: 5; 
+            opacity: 0; 
+            transform: scaleX(-1);
+            transition: opacity 0.3s;
+        }
+        #remoteVideo.active { 
+            opacity: 1; 
+        }
+        
+        /* PIP */
+        .pip-container {
+            position: absolute; 
+            top: max(130px, var(--safe-area-top) + 100px); 
+            right: 15px; 
+            width: 90px; 
+            height: 120px;
+            z-index: 20; 
+            border: 2px solid var(--neon-cyan);
+            background: #000; 
+            overflow: hidden;
+            clip-path: polygon(10% 0, 100% 0, 100% 100%, 0 100%, 0 30%);
+            box-shadow: 0 0 20px var(--neon-cyan);
+            pointer-events: none;
+        }
+        #localVideo { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            transform: scaleX(-1);
+            transition: opacity 0.3s;
+        }
+        #localVideo.camera-off {
+            opacity: 0;
+        }
+
+        /* Camera Off Placeholder */
+        .camera-off-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: var(--neon-cyan);
+            font-size: 0.8rem;
+            z-index: 6;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .camera-off-placeholder.active {
+            opacity: 1;
+        }
+        .camera-off-placeholder i {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        /* === PROFILE CARD === */
+        .profile-card {
+            position: absolute; 
+            bottom: 160px; 
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8); 
+            border: 1px solid var(--neon-purple);
+            padding: 10px 20px; 
+            z-index: 60;
+            clip-path: polygon(5% 0, 100% 0, 95% 100%, 0 100%);
+            box-shadow: 0 0 15px rgba(188, 19, 254, 0.3);
+            opacity: 0; 
+            transform: translateX(-20px); 
+            transition: 0.4s;
+            pointer-events: none;
+            max-width: 80%;
+        }
+        .profile-card.show { 
+            opacity: 1; 
+            transform: translateX(0); 
+        }
+        .p-name { 
+            color: var(--neon-purple); 
+            font-family: var(--font-head); 
+            font-size: 1rem; 
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .p-meta { 
+            font-size: 0.6rem; 
+            color: var(--neon-cyan); 
+            display: flex; 
+            align-items: center; 
+            gap: 5px; 
+            margin-top: 5px; 
+        }
+
+        /* === CONTROLS DOCK === */
+        .controls-dock {
+            position: absolute; 
+            bottom: 0; 
+            left: 0; 
+            width: 100%;
+            padding-bottom: max(20px, var(--safe-area-bottom));
+            display: flex; 
+            justify-content: space-around; 
+            align-items: center;
+            z-index: 100; 
+            height: 140px;
+            background: linear-gradient(0deg, rgba(0,0,0,0.9), transparent);
+            pointer-events: none;
+        }
+        .controls-dock > * {
+            pointer-events: auto;
+        }
+
+        .cyber-btn-circle {
+            width: 55px; 
+            height: 55px; 
+            border-radius: 50%;
+            background: rgba(0,0,0,0.8); 
+            border: 2px solid var(--neon-cyan);
+            color: #fff; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            cursor: pointer; 
+            transition: all 0.2s; 
+            font-size: 1.3rem;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 15px rgba(0,243,255,0.3);
+        }
+        .cyber-btn-circle:active { 
+            transform: scale(0.9); 
+        }
+        .cyber-btn-circle:hover { 
+            border-color: var(--neon-pink);
+            box-shadow: 0 0 20px var(--neon-pink);
+        }
+        .cyber-btn-circle.camera-off {
+            border-color: var(--neon-pink);
+            background: rgba(255, 0, 85, 0.2);
+            color: var(--neon-pink);
+        }
+
+        .btn-main-core {
+            width: 90px; 
+            height: 90px;
+            background: radial-gradient(circle, var(--neon-pink) 0%, #990033 100%);
+            border: 3px solid #fff;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex; 
+            flex-direction: column;
+            justify-content: center; 
+            align-items: center;
+            cursor: pointer; 
+            box-shadow: 0 0 40px var(--neon-pink);
+            z-index: 101; 
+            font-family: var(--font-head); 
+            font-weight: 700; 
+            color: #fff;
+            font-size: 0.8rem;
+            transition: all 0.3s;
+        }
+        .btn-main-core.stop {
+            background: radial-gradient(circle, #ff3333 0%, #990000 100%);
+            box-shadow: 0 0 40px #ff0000;
+        }
+
+        /* === CHAT SYSTEM === */
+        .chat-overlay { 
+            position: absolute; 
+            bottom: 150px; 
+            left: 20px; 
+            width: 80%; 
+            pointer-events: none; 
+            z-index: 80; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px; 
+            max-height: 200px; 
+            overflow-y: auto;
+        }
+        .msg-bubble {
+            background: rgba(0, 0, 0, 0.8); 
+            border: 1px solid var(--neon-cyan);
+            color: #fff; 
+            padding: 8px 12px; 
+            font-family: var(--font-main); 
+            font-size: 0.8rem;
+            max-width: 90%; 
+            backdrop-filter: blur(5px);
+            border-radius: 5px;
+        }
+        .msg-bubble.mine { 
+            border-color: var(--neon-pink); 
+            background: rgba(255, 0, 85, 0.2); 
+            align-self: flex-end; 
+            text-align: right; 
+        }
+
+        .chat-input-area {
+            position: absolute; 
+            bottom: -100px; 
+            left: 0; 
+            width: 100%; 
+            height: 100px;
+            background: rgba(0,0,0,0.95); 
+            border-top: 2px solid var(--neon-cyan);
+            display: flex; 
+            align-items: center; 
+            padding: 20px;
+            padding-bottom: max(20px, var(--safe-area-bottom));
+            transition: bottom 0.3s ease; 
+            z-index: 102;
+            backdrop-filter: blur(10px);
+        }
+        .chat-input-area.open { 
+            bottom: 0; 
+        }
+        .chat-input { 
+            flex: 1; 
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--neon-cyan); 
+            color: #fff; 
+            padding: 15px;
+            font-family: var(--font-main); 
+            outline: none;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .chat-input:focus {
+            border-color: var(--neon-pink);
+            box-shadow: 0 0 20px var(--neon-pink);
+        }
+        .btn-send {
+            width: 50px;
+            height: 50px;
+            background: var(--neon-cyan);
+            border: none;
+            border-radius: 5px;
+            margin-left: 10px;
+            color: #000;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* === SIDEBAR AVEC GESTION DES CONTACTS === */
+        .sidebar {
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 85%; 
+            height: 100%;
+            background: rgba(5, 5, 10, 0.98); 
+            backdrop-filter: blur(10px);
+            border-right: 2px solid var(--neon-cyan); 
+            z-index: 200;
+            transform: translateX(-100%); 
+            transition: transform 0.3s ease;
+            display: flex; 
+            flex-direction: column;
+            padding-top: var(--safe-area-top);
+        }
+        .sidebar.open { 
+            transform: translateX(0); 
+        }
+        .sidebar-header { 
+            padding: 20px; 
+            border-bottom: 1px solid var(--neon-cyan); 
+            background: rgba(0, 243, 255, 0.1); 
+        }
+        .my-peer-id { 
+            font-size: 0.6rem; 
+            color: var(--neon-cyan); 
+            word-break: break-all; 
+            margin-top: 10px; 
+        }
+        
+        .online-users-section {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .section-title {
+            color: var(--neon-cyan);
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .user-list-item {
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            padding: 10px;
+            margin-bottom: 5px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .user-list-item:hover { 
+            background: rgba(0, 243, 255, 0.1); 
+        }
+        
+        .user-status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--online);
+            box-shadow: 0 0 10px var(--online);
+        }
+        
+        .user-avatar-small {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #000;
+        }
+        
+        .user-info-small {
+            flex: 1;
+        }
+        
+        .user-name-small {
+            color: #fff;
+            font-size: 0.8rem;
+        }
+        
+        .user-peer-small {
+            color: var(--neon-cyan);
+            font-size: 0.6rem;
+        }
+
+        .contacts-section {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .contact-item {
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+            padding: 12px;
+            margin-bottom: 8px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.2s;
+            position: relative;
+        }
+        .contact-item:hover { 
+            background: rgba(0, 243, 255, 0.1); 
+        }
+        
+        .contact-avatar {
+            width: 35px; 
+            height: 35px; 
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
+            border-radius: 50%;
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            font-weight: bold; 
+            color: #000;
+            box-shadow: 0 0 10px var(--neon-cyan);
+        }
+        
+        .contact-info {
+            flex: 1;
+        }
+        
+        .contact-name {
+            color: #fff;
+            font-size: 0.9rem;
+            margin-bottom: 3px;
+        }
+        
+        .contact-id {
+            color: var(--neon-cyan);
+            font-size: 0.6rem;
+        }
+        
+        .contact-actions {
+            display: flex;
+            gap: 10px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .contact-item:hover .contact-actions {
+            opacity: 1;
+        }
+        
+        .contact-call-btn, .contact-delete-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .contact-call-btn {
+            background: rgba(0, 243, 255, 0.2);
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+        }
+        .contact-call-btn:hover {
+            background: var(--neon-cyan);
+            color: #000;
+            transform: scale(1.1);
+        }
+        
+        .contact-delete-btn {
+            background: rgba(255, 0, 85, 0.2);
+            border: 1px solid var(--neon-pink);
+            color: var(--neon-pink);
+        }
+        .contact-delete-btn:hover {
+            background: var(--neon-pink);
+            color: #fff;
+            transform: scale(1.1);
+        }
+
+        .add-contact-btn {
+            margin: 0 15px 15px 15px;
+            padding: 12px;
+            background: rgba(0, 243, 255, 0.1);
+            border: 1px dashed var(--neon-cyan);
+            color: var(--neon-cyan);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .add-contact-btn:hover {
+            background: rgba(0, 243, 255, 0.2);
+            box-shadow: 0 0 15px var(--neon-cyan);
+        }
+
+        .overlay-bg { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0,0,0,0.8); 
+            z-index: 150; 
+            display: none; 
+            backdrop-filter: blur(5px); 
+        }
+        .overlay-bg.active { 
+            display: block; 
+        }
+
+        /* === MODALS === */
+        .modal {
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            background: rgba(0,0,0,0.98); 
+            z-index: 300;
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center;
+            padding: 30px; 
+            border: 2px solid var(--neon-cyan);
+            clip-path: polygon(10% 0, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%);
+            backdrop-filter: blur(10px);
+        }
+        .modal.hidden { 
+            display: none; 
+        }
+        .modal h3 {
+            color: var(--neon-cyan);
+            margin-bottom: 20px;
+        }
+        .modal input {
+            width: 100%; 
+            background: rgba(0,0,0,0.6); 
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan); 
+            padding: 15px; 
+            font-family: var(--font-main); 
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .modal-btns { 
+            display: flex; 
+            gap: 15px; 
+            width: 100%; 
+            margin-top: 20px; 
+        }
+        .btn-modal { 
+            flex: 1; 
+            padding: 15px; 
+            cursor: pointer; 
+            border: none; 
+            font-family: var(--font-head); 
+            text-transform: uppercase;
+            font-size: 14px;
+        }
+        .btn-confirm { 
+            background: var(--neon-cyan); 
+            color: #000; 
+            box-shadow: 0 0 20px var(--neon-cyan);
+        }
+        .btn-cancel { 
+            background: #333; 
+            color: #fff; 
+        }
+        .btn-delete {
+            background: var(--neon-pink);
+            color: #fff;
+            box-shadow: 0 0 20px var(--neon-pink);
+        }
+
+        /* === MODAL CONFIRM DELETE === */
+        .confirm-delete-modal {
+            text-align: center;
+        }
+        .confirm-delete-modal p {
+            margin: 20px 0;
+            color: var(--text-tech);
+        }
+
+        .status-badge {
+            position: absolute;
+            top: max(15px, var(--safe-area-top) + 50px);
+            right: 15px;
+            padding: 5px 10px;
+            background: rgba(0,0,0,0.7);
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            font-size: 0.6rem;
+            z-index: 101;
+            border-radius: 3px;
+        }
+
+        /* Camera Off Placeholder */
+        .camera-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a1a, #1a1a2e);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: var(--neon-cyan);
+            z-index: 7;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .camera-placeholder.active {
+            opacity: 1;
+        }
+        .camera-placeholder i {
+            font-size: 4rem;
+            margin-bottom: 15px;
+            text-shadow: 0 0 20px var(--neon-cyan);
+        }
+
+        /* Animations */
+        @keyframes floatUp { 
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 1; } 
+            100% { transform: translate(-50%, -200%) scale(2); opacity: 0; } 
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+        .floating-icon {
+            position: absolute;
+            color: var(--neon-pink);
+            font-size: 2rem;
+            z-index: 200;
+            pointer-events: none;
+            animation: floatUp 1s ease-out forwards;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <div class="grid-bg"></div>
+    <div class="vignette"></div>
+    <div class="overlay-bg" id="overlayBg" onclick="UI.toggleSidebar(false)"></div>
+
+    <!-- Camera Off Placeholder (global) -->
+    <div class="camera-placeholder" id="cameraPlaceholder">
+        <i class="fas fa-video-slash"></i>
+        <div>CAMÉRA DÉSACTIVÉE</div>
+        <div style="font-size:0.6rem; margin-top:10px;">Mode chat uniquement</div>
+    </div>
+
+    <!-- === VUE 1: LOGIN === -->
+    <div id="view-login" class="view active">
+        <div class="login-logo">GLEAPHE<br><span style="font-size:1rem; color:var(--neon-pink)">// P2P LIVE</span></div>
+        <div style="color:var(--text-tech); margin-bottom:20px; font-size:0.8rem; text-align:center;">
+            [ WEBRTC P2P ]<br>
+            AUTHENTIFICATION REQUISE
+        </div>
+        <input type="text" id="loginPseudo" class="tech-input" placeholder="IDENTIFIANT (PSEUDO)..." autocomplete="off">
+        
+        <div class="permission-info" id="permissionStatus">
+            ⚡ CLIQUEZ POUR ACCÉDER À LA CAMÉRA
+        </div>
+        
+        <button class="cyber-btn" onclick="App.requestPermissions()">
+            <i class="fas fa-camera"></i> AUTORISER CAMÉRA
+        </button>
+        
+        <div style="margin-top:20px; font-size:0.6rem; color:#666; text-align:center;">
+            🔒 HTTPS requis • WebRTC P2P
+        </div>
+    </div>
+
+    <!-- === SIDEBAR AVEC GESTION DES CONTACTS === -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2 style="margin:0; color:var(--neon-cyan)">GLEAPHE NET</h2>
+            <div style="font-size:0.7rem; margin-top:5px; color:#888;">USER: <span id="sidebarMyName" style="color:#fff">UNKNOWN</span></div>
+            <div class="my-peer-id" id="sidebarMyId">...</div>
+        </div>
+        
+        <!-- Section Utilisateurs Connectés -->
+        <div class="online-users-section">
+            <div class="section-title">
+                <i class="fas fa-circle" style="color:var(--online); font-size:0.6rem;"></i> 
+                EN LIGNE (<span id="onlineCount">0</span>)
+            </div>
+            <div id="onlineUsersList">
+                <!-- Les utilisateurs connectés seront injectés ici -->
+            </div>
+        </div>
+        
+        <!-- Bouton Ajouter Contact -->
+        <div class="add-contact-btn" onclick="UI.openAddContactModal()">
+            <i class="fas fa-plus-circle"></i> AJOUTER UN CONTACT
+        </div>
+        
+        <!-- Section Contacts -->
+        <div class="contacts-section">
+            <div class="section-title">
+                <i class="fas fa-address-book"></i> 
+                MES CONTACTS
+            </div>
+            <div id="contactList">
+                <!-- Les contacts seront injectés ici avec bouton supprimer -->
+            </div>
+        </div>
+    </div>
+
+    <!-- === MODAL ADD CONTACT === -->
+    <div class="modal hidden" id="modalAddContact">
+        <h3>NOUVEAU CONTACT</h3>
+        <input type="text" id="newContactName" placeholder="NOM">
+        <input type="text" id="newContactId" placeholder="ID CIBLE">
+        <div class="modal-btns">
+            <button class="btn-modal btn-cancel" onclick="UI.closeModal('modalAddContact')">ANNULER</button>
+            <button class="btn-modal btn-confirm" onclick="App.addContact()">SAUVEGARDER</button>
+        </div>
+    </div>
+
+    <!-- === MODAL CONFIRM DELETE CONTACT === -->
+    <div class="modal hidden" id="modalConfirmDelete">
+        <h3 style="color:var(--neon-pink);">SUPPRIMER CONTACT</h3>
+        <div style="margin:20px 0; text-align:center;">
+            <p>Êtes-vous sûr de vouloir supprimer</p>
+            <p style="color:var(--neon-cyan); font-size:1.2rem; margin-top:10px;" id="deleteContactName"></p>
+        </div>
+        <div class="modal-btns">
+            <button class="btn-modal btn-cancel" onclick="UI.closeModal('modalConfirmDelete')">ANNULER</button>
+            <button class="btn-modal btn-delete" onclick="App.confirmDeleteContact()">SUPPRIMER</button>
+        </div>
+    </div>
+
+    <!-- === MODAL INCOMING CALL === -->
+    <div class="modal hidden" id="modalIncomingCall">
+        <h3 style="color:var(--neon-pink);">APPEL ENTRANT</h3>
+        <div id="incomingCallerInfo" style="margin:20px 0; color:var(--neon-cyan);">...</div>
+        <div class="modal-btns">
+            <button class="btn-modal btn-cancel" onclick="App.declineCall()">REFUSER</button>
+            <button class="btn-modal btn-confirm" onclick="App.acceptCall()">ACCEPTER</button>
+        </div>
+    </div>
+
+    <!-- === MODAL PERMISSION ERROR === -->
+    <div class="modal hidden" id="modalPermissionError">
+        <h3 style="color:var(--neon-pink);">ERREUR PERMISSION</h3>
+        <div style="margin:20px; text-align:center; color:var(--text-tech);">
+            <i class="fas fa-exclamation-triangle" style="font-size:3rem; color:var(--neon-pink); margin-bottom:20px;"></i>
+            <p>Impossible d'accéder à la caméra/micro.</p>
+            <p style="font-size:0.8rem;">Vérifiez les permissions dans votre navigateur.</p>
+        </div>
+        <div class="modal-btns">
+            <button class="btn-modal btn-confirm" onclick="UI.closeModal('modalPermissionError')">OK</button>
+        </div>
+    </div>
+
+    <!-- === VUE 2: MAIN APP === -->
+    <div id="view-main" class="view">
+        
+        <!-- HUD -->
+        <div class="scanline"></div>
+        <div class="hud-corner tl"></div>
+        <div class="hud-corner tr"></div>
+        <div class="hud-corner bl"></div>
+        <div class="hud-corner br"></div>
+
+        <!-- Status Badge -->
+        <div class="status-badge" id="connectionStatus">DÉCONNECTÉ</div>
+
+        <!-- TOP BAR -->
+        <div class="top-bar">
+            <div class="status-line">
+                <span>P2P: <span id="p2pStatus" style="color:#ff0000">OFFLINE</span></span>
+                <span id="clock">00:00:00</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div class="brand">GLEAPHE <span style="color:var(--neon-cyan)">LIVE</span></div>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <div class="online-badge" onclick="UI.toggleSidebar(true)">
+                        <i class="fas fa-circle"></i> <span id="headerOnlineCount">0</span>
+                    </div>
+                    <button class="menu-btn" onclick="UI.toggleSidebar(true)"><i class="fas fa-users"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIDEO -->
+        <div class="video-stage" id="videoStage">
+            <video id="remoteVideo" autoplay playsinline></video>
+            
+            <div class="pip-container">
+                <video id="localVideo" autoplay playsinline muted></video>
+            </div>
+
+            <div class="profile-card" id="profileCard">
+                <div class="p-name" id="matchName">CIBLE INCONNUE</div>
+                <div class="p-meta"><i class="fas fa-map-marker-alt"></i> <span id="matchLoc">EN ATTENTE...</span></div>
+            </div>
+
+            <div class="chat-overlay" id="chatOverlay"></div>
+        </div>
+
+        <!-- CONTROLS -->
+        <div class="controls-dock">
+            <div class="cyber-btn-circle" onclick="App.toggleCamera()" id="btnCamera">
+                <i class="fas fa-video"></i>
+            </div>
+            <div class="cyber-btn-circle" id="btnMic" onclick="App.toggleMic()">
+                <i class="fas fa-microphone"></i>
+            </div>
+            
+            <div class="btn-main-core" id="btnMain" onclick="App.mainAction()">
+                <i class="fas fa-play" style="font-size:1.5rem; margin-bottom:5px;"></i>
+                <div style="font-size:0.7rem;" id="btnMainText">START</div>
+            </div>
+            
+            <div class="cyber-btn-circle" style="color:var(--neon-cyan)" onclick="UI.toggleChat()">
+                <i class="fas fa-comment-dots"></i>
+            </div>
+            <div class="cyber-btn-circle" onclick="App.flipCamera()">
+                <i class="fas fa-sync"></i>
+            </div>
+        </div>
+
+        <!-- CHAT INPUT -->
+        <div class="chat-input-area" id="chatInputArea">
+            <input type="text" class="chat-input" id="msgInput" placeholder="> ENTRER DONNÉES..." autocomplete="off">
+            <div class="btn-send" onclick="App.sendMessage()">
+                <i class="fas fa-paper-plane"></i>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    /* --- CONFIGURATION P2P --- */
+    const PEER_CONFIG = {
+        debug: 2,
+        config: {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { urls: 'stun:stun4.l.google.com:19302' },
+                {
+                    urls: 'turn:openrelay.metered.ca:80',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:openrelay.metered.ca:443',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                }
+            ],
+            sdpSemantics: 'unified-plan'
+        }
+    };
+
+    /* --- APPLICATION CORE --- */
+    const App = {
+        state: {
+            pseudo: null,
+            stream: null,
+            peer: null,
+            currentCall: null,
+            mode: 'idle', // idle, calling, in-call
+            contacts: [],
+            onlineUsers: [],
+            isMicOn: true,
+            isCameraOn: true,
+            pendingCall: null,
+            currentPeerId: null,
+            hasPermissions: false,
+            contactToDelete: null
+        },
+
+        init: function() {
+            // Horloge
+            setInterval(() => {
+                const now = new Date();
+                document.getElementById('clock').innerText = now.toLocaleTimeString();
+            }, 1000);
+
+            // Charger les contacts
+            const savedContacts = localStorage.getItem('nexus_contacts');
+            if (savedContacts) {
+                try {
+                    this.state.contacts = JSON.parse(savedContacts);
+                } catch(e) {
+                    this.state.contacts = [];
+                }
+            }
+
+            // Event listeners
+            document.getElementById('msgInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') this.sendMessage();
+            });
+
+            // Pré-remplir le pseudo
+            const savedPseudo = localStorage.getItem('nexus_pseudo');
+            if (savedPseudo) {
+                document.getElementById('loginPseudo').value = savedPseudo;
+            }
+        },
+
+        // === DEMANDER PERMISSIONS ===
+        requestPermissions: async function() {
+            const pseudo = document.getElementById('loginPseudo').value.trim();
+            if (!pseudo) {
+                alert("VEUILLEZ ENTRER UN PSEUDO");
+                return;
+            }
+
+            this.state.pseudo = pseudo;
+            localStorage.setItem('nexus_pseudo', pseudo);
+
+            try {
+                document.getElementById('permissionStatus').innerHTML = '⏳ DEMANDE...';
+                
+                this.state.stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: "user"
+                    }, 
+                    audio: true 
+                });
+
+                this.state.hasPermissions = true;
+                this.initConnection();
+
+            } catch(e) {
+                console.error('Erreur permission:', e);
+                document.getElementById('permissionStatus').innerHTML = '❌ ERREUR';
+                document.getElementById('modalPermissionError').classList.remove('hidden');
+            }
+        },
+
+        // === INITIALISER CONNEXION P2P ===
+        initConnection: function() {
+            const localVideo = document.getElementById('localVideo');
+            localVideo.srcObject = this.state.stream;
+
+            // Initialiser PeerJS
+            this.state.peer = new Peer(PEER_CONFIG);
+
+            this.state.peer.on('open', (id) => {
+                console.log('Mon ID Peer:', id);
+                this.state.currentPeerId = id;
+                
+                this.addOnlineUser(this.state.pseudo, id);
+                
+                document.getElementById('sidebarMyId').innerHTML = `ID: ${id}`;
+                document.getElementById('sidebarMyName').innerText = this.state.pseudo;
+                document.getElementById('p2pStatus').innerText = 'ONLINE';
+                document.getElementById('p2pStatus').style.color = '#00ff00';
+                document.getElementById('connectionStatus').innerText = 'CONNECTÉ';
+                document.getElementById('connectionStatus').style.color = '#00ff00';
+                
+                setInterval(() => this.broadcastOnlineStatus(), 5000);
+                this.broadcastOnlineStatus();
+            });
+
+            this.state.peer.on('call', (call) => {
+                this.handleIncomingCall(call);
+            });
+
+            this.state.peer.on('connection', (conn) => {
+                conn.on('data', (data) => {
+                    if (data.type === 'online-status') {
+                        this.handleOnlineStatus(data);
+                    }
+                });
+            });
+
+            this.state.peer.on('error', (err) => {
+                console.error('Peer error:', err);
+            });
+
+            document.getElementById('view-login').classList.remove('active');
+            document.getElementById('view-main').classList.add('active');
+            UI.renderContacts();
+            UI.renderOnlineUsers();
+        },
+
+        // === GESTION DES UTILISATEURS CONNECTÉS ===
+        addOnlineUser: function(pseudo, peerId) {
+            const existing = this.state.onlineUsers.find(u => u.peerId === peerId);
+            if (!existing && peerId !== this.state.currentPeerId) {
+                this.state.onlineUsers.push({ 
+                    pseudo: pseudo, 
+                    peerId: peerId,
+                    lastSeen: Date.now()
+                });
+                UI.renderOnlineUsers();
+            }
+        },
+
+        removeOnlineUser: function(peerId) {
+            this.state.onlineUsers = this.state.onlineUsers.filter(u => u.peerId !== peerId);
+            UI.renderOnlineUsers();
+        },
+
+        broadcastOnlineStatus: function() {
+            if (this.state.peer && this.state.peer.connections) {
+                const status = {
+                    type: 'online-status',
+                    pseudo: this.state.pseudo,
+                    peerId: this.state.currentPeerId,
+                    timestamp: Date.now()
+                };
+                
+                Object.keys(this.state.peer.connections).forEach(peerId => {
+                    this.state.peer.connections[peerId].forEach(conn => {
+                        if (conn.open) {
+                            conn.send(status);
+                        }
+                    });
+                });
+            }
+            
+            const now = Date.now();
+            this.state.onlineUsers = this.state.onlineUsers.filter(u => 
+                (now - u.lastSeen) < 15000
+            );
+            UI.renderOnlineUsers();
+        },
+
+        handleOnlineStatus: function(data) {
+            if (data.peerId !== this.state.currentPeerId) {
+                this.addOnlineUser(data.pseudo, data.peerId);
+            }
+        },
+
+        // === GESTION DES CONTACTS ===
+        addContact: function() {
+            const name = document.getElementById('newContactName').value.trim();
+            const id = document.getElementById('newContactId').value.trim();
+            
+            if (!name || !id) {
+                alert("TOUS LES CHAMPS SONT REQUIS");
+                return;
+            }
+
+            this.state.contacts.push({ name, id });
+            localStorage.setItem('nexus_contacts', JSON.stringify(this.state.contacts));
+            
+            UI.closeModal('modalAddContact');
+            document.getElementById('newContactName').value = '';
+            document.getElementById('newContactId').value = '';
+            UI.renderContacts();
+        },
+
+        deleteContact: function(name, id) {
+            this.state.contactToDelete = { name, id };
+            document.getElementById('deleteContactName').innerText = name;
+            document.getElementById('modalConfirmDelete').classList.remove('hidden');
+        },
+
+        confirmDeleteContact: function() {
+            if (this.state.contactToDelete) {
+                this.state.contacts = this.state.contacts.filter(c => 
+                    c.id !== this.state.contactToDelete.id
+                );
+                localStorage.setItem('nexus_contacts', JSON.stringify(this.state.contacts));
+                UI.renderContacts();
+                UI.closeModal('modalConfirmDelete');
+                this.state.contactToDelete = null;
+            }
+        },
+
+        callContact: function(id, name) {
+            if (!this.state.stream) return;
+            
+            UI.toggleSidebar(false);
+            
+            try {
+                this.state.mode = 'calling';
+                const btnMain = document.getElementById('btnMain');
+                const btnText = document.getElementById('btnMainText');
+                btnMain.classList.add('stop');
+                btnText.innerText = 'APPEL';
+                btnMain.querySelector('i').className = 'fas fa-phone-alt';
+                
+                UI.setProfile('APPEL EN COURS', name);
+                
+                const call = this.state.peer.call(id, this.state.stream);
+                
+                call.on('stream', (remoteStream) => {
+                    this.state.currentCall = call;
+                    this.state.mode = 'in-call';
+                    
+                    const remoteVideo = document.getElementById('remoteVideo');
+                    remoteVideo.srcObject = remoteStream;
+                    remoteVideo.classList.add('active');
+                    
+                    btnText.innerText = 'STOP';
+                    btnMain.querySelector('i').className = 'fas fa-stop';
+                    
+                    UI.setProfile(name, 'EN COMMUNICATION');
+                    UI.addMessage('SYSTÈME: Appel établi', false);
+                });
+
+                call.on('data', (data) => {
+                    if (data.type === 'message') {
+                        UI.addMessage(data.text, false);
+                    } else if (data.type === 'gift') {
+                        UI.spawnEffect();
+                    }
+                });
+
+                call.on('close', () => {
+                    this.endCall();
+                });
+
+                call.on('error', (err) => {
+                    console.error('Call error:', err);
+                    this.endCall();
+                });
+
+                this.state.currentCall = call;
+
+            } catch(e) {
+                console.error('Erreur appel:', e);
+                this.endCall();
+            }
+        },
+
+        callOnlineUser: function(peerId, pseudo) {
+            this.callContact(peerId, pseudo);
+        },
+
+        // === BOUTON PRINCIPAL ===
+        mainAction: function() {
+            if (this.state.mode === 'in-call') {
+                this.endCall();
+            } else {
+                this.startIdle();
+            }
+        },
+
+        startIdle: function() {
+            this.state.mode = 'idle';
+            const btnMain = document.getElementById('btnMain');
+            const btnText = document.getElementById('btnMainText');
+            btnMain.classList.remove('stop');
+            btnText.innerText = 'ATTENTE';
+            btnMain.querySelector('i').className = 'fas fa-hourglass-half';
+            
+            const remoteVideo = document.getElementById('remoteVideo');
+            if (remoteVideo.srcObject) {
+                remoteVideo.srcObject.getTracks().forEach(track => track.stop());
+                remoteVideo.srcObject = null;
+            }
+            remoteVideo.classList.remove('active');
+            
+            UI.setProfile('EN ATTENTE', 'PRÊT');
+            UI.addMessage('SYSTÈME: Mode attente activé', false);
+        },
+
+        endCall: function() {
+            if (this.state.currentCall) {
+                this.state.currentCall.close();
+                this.state.currentCall = null;
+            }
+            
+            this.state.mode = 'idle';
+            
+            const remoteVideo = document.getElementById('remoteVideo');
+            if (remoteVideo.srcObject) {
+                remoteVideo.srcObject.getTracks().forEach(track => track.stop());
+                remoteVideo.srcObject = null;
+            }
+            remoteVideo.classList.remove('active');
+            
+            const btnMain = document.getElementById('btnMain');
+            const btnText = document.getElementById('btnMainText');
+            btnMain.classList.remove('stop');
+            btnText.innerText = 'ATTENTE';
+            btnMain.querySelector('i').className = 'fas fa-hourglass-half';
+            
+            UI.setProfile('EN ATTENTE', 'PRÊT');
+            UI.addMessage('SYSTÈME: Appel terminé', false);
+        },
+
+        handleIncomingCall: function(call) {
+            if (this.state.mode === 'in-call') {
+                call.close();
+                return;
+            }
+
+            this.state.pendingCall = call;
+            document.getElementById('incomingCallerInfo').innerHTML = `Appel de: <span style="color:var(--neon-cyan)">${call.peer.substring(0, 8)}...</span>`;
+            document.getElementById('modalIncomingCall').classList.remove('hidden');
+        },
+
+        acceptCall: function() {
+            if (!this.state.pendingCall) return;
+            
+            UI.closeModal('modalIncomingCall');
+            
+            const call = this.state.pendingCall;
+            call.answer(this.state.stream);
+            
+            call.on('stream', (remoteStream) => {
+                this.state.currentCall = call;
+                this.state.mode = 'in-call';
+                
+                const remoteVideo = document.getElementById('remoteVideo');
+                remoteVideo.srcObject = remoteStream;
+                remoteVideo.classList.add('active');
+                
+                const btnMain = document.getElementById('btnMain');
+                const btnText = document.getElementById('btnMainText');
+                btnMain.classList.add('stop');
+                btnText.innerText = 'STOP';
+                btnMain.querySelector('i').className = 'fas fa-stop';
+                
+                UI.setProfile(call.peer.substring(0,8), 'EN COMMUNICATION');
+                UI.addMessage('SYSTÈME: Appel accepté', false);
+            });
+
+            call.on('data', (data) => {
+                if (data.type === 'message') {
+                    UI.addMessage(data.text, false);
+                } else if (data.type === 'gift') {
+                    UI.spawnEffect();
+                }
+            });
+
+            call.on('close', () => {
+                this.endCall();
+            });
+
+            this.state.pendingCall = null;
+        },
+
+        declineCall: function() {
+            if (this.state.pendingCall) {
+                this.state.pendingCall.close();
+                this.state.pendingCall = null;
+            }
+            UI.closeModal('modalIncomingCall');
+            UI.addMessage('SYSTÈME: Appel refusé', false);
+        },
+
+        // === NOUVELLE FONCTION: DÉSACTIVER CAMÉRA ===
+        toggleCamera: function() {
+            if (!this.state.stream) return;
+            
+            this.state.isCameraOn = !this.state.isCameraOn;
+            
+            // Désactiver/activer les tracks vidéo
+            this.state.stream.getVideoTracks().forEach(track => {
+                track.enabled = this.state.isCameraOn;
+            });
+            
+            // Mettre à jour l'UI
+            const localVideo = document.getElementById('localVideo');
+            const btnCamera = document.getElementById('btnCamera');
+            const cameraPlaceholder = document.getElementById('cameraPlaceholder');
+            
+            if (this.state.isCameraOn) {
+                localVideo.classList.remove('camera-off');
+                btnCamera.classList.remove('camera-off');
+                btnCamera.innerHTML = '<i class="fas fa-video"></i>';
+                cameraPlaceholder.classList.remove('active');
+                UI.addMessage('SYSTÈME: Caméra activée', false);
+            } else {
+                localVideo.classList.add('camera-off');
+                btnCamera.classList.add('camera-off');
+                btnCamera.innerHTML = '<i class="fas fa-video-slash"></i>';
+                cameraPlaceholder.classList.add('active');
+                UI.addMessage('SYSTÈME: Caméra désactivée (mode chat)', false);
+            }
+        },
+
+        // === UTILS ===
+        toggleMic: function() {
+            if (this.state.stream) {
+                this.state.isMicOn = !this.state.isMicOn;
+                this.state.stream.getAudioTracks().forEach(track => {
+                    track.enabled = this.state.isMicOn;
+                });
+                const btn = document.getElementById('btnMic');
+                btn.style.color = this.state.isMicOn ? '#fff' : 'var(--neon-pink)';
+                btn.innerHTML = this.state.isMicOn ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
+            }
+        },
+
+        flipCamera: function() {
+            const localVideo = document.getElementById('localVideo');
+            if (localVideo) {
+                const currentTransform = localVideo.style.transform;
+                localVideo.style.transform = currentTransform.includes('scaleX(-1)') ? 'scaleX(1)' : 'scaleX(-1)';
+            }
+        },
+
+        sendGift: function() {
+            if (this.state.mode !== 'in-call' || !this.state.currentCall) return;
+            
+            UI.spawnEffect();
+            
+            try {
+                this.state.currentCall.send({ type: 'gift' });
+            } catch(e) {
+                console.error('Erreur envoi gift:', e);
+            }
+        },
+
+        sendMessage: function() {
+            const input = document.getElementById('msgInput');
+            const text = input.value.trim();
+            
+            if (!text) return;
+            
+            if (this.state.mode === 'in-call' && this.state.currentCall) {
+                try {
+                    this.state.currentCall.send({ type: 'message', text: text });
+                    UI.addMessage(text, true);
+                    input.value = '';
+                    UI.toggleChat(false);
+                } catch(e) {
+                    console.error('Erreur envoi message:', e);
+                }
+            } else {
+                alert("PAS EN COMMUNICATION");
+            }
+        }
+    };
+
+    /* --- UI MANAGER --- */
+    const UI = {
+        setProfile: function(name, loc) {
+            const card = document.getElementById('profileCard');
+            document.getElementById('matchName').innerText = name.toUpperCase();
+            document.getElementById('matchLoc').innerText = loc;
+            card.classList.add('show');
+        },
+
+        toggleSidebar: function(open) {
+            const sb = document.getElementById('sidebar');
+            const bg = document.getElementById('overlayBg');
+            if (open) { 
+                sb.classList.add('open'); 
+                bg.classList.add('active');
+                this.renderOnlineUsers();
+                this.renderContacts();
+            } else { 
+                sb.classList.remove('open'); 
+                bg.classList.remove('active'); 
+            }
+        },
+
+        toggleChat: function(forceOpen) {
+            const area = document.getElementById('chatInputArea');
+            if (forceOpen !== undefined) { 
+                forceOpen ? area.classList.add('open') : area.classList.remove('open'); 
+            } else { 
+                area.classList.toggle('open'); 
+                if (area.classList.contains('open')) {
+                    document.getElementById('msgInput').focus();
+                } else {
+                    document.getElementById('msgInput').blur();
+                }
+            }
+        },
+
+        closeModal: function(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        },
+
+        openAddContactModal: function() { 
+            document.getElementById('modalAddContact').classList.remove('hidden'); 
+        },
+
+        addMessage: function(text, isMine) {
+            const container = document.getElementById('chatOverlay');
+            const bubble = document.createElement('div');
+            bubble.className = `msg-bubble ${isMine ? 'mine' : ''}`;
+            bubble.innerText = text;
+            container.appendChild(bubble);
+            container.scrollTop = container.scrollHeight;
+            
+            setTimeout(() => {
+                if (bubble.parentNode) {
+                    bubble.remove();
+                }
+            }, 30000);
+        },
+
+        spawnEffect: function() {
+            const stage = document.getElementById('videoStage');
+            const icon = document.createElement('div');
+            icon.className = 'floating-icon';
+            icon.innerHTML = '<i class="fas fa-biohazard"></i>';
+            icon.style.left = Math.random() * 80 + 10 + '%';
+            icon.style.top = '50%';
+            stage.appendChild(icon);
+            setTimeout(() => icon.remove(), 1000);
+        },
+
+        renderOnlineUsers: function() {
+            const list = document.getElementById('onlineUsersList');
+            const count = document.getElementById('onlineCount');
+            const headerCount = document.getElementById('headerOnlineCount');
+            
+            if (!list) return;
+            
+            const otherUsers = App.state.onlineUsers.filter(u => u.peerId !== App.state.currentPeerId);
+            
+            count.innerText = otherUsers.length;
+            headerCount.innerText = otherUsers.length;
+            
+            if (otherUsers.length === 0) {
+                list.innerHTML = '<div style="text-align:center; color:#666; padding:10px;">AUCUN UTILISATEUR CONNECTÉ</div>';
+                return;
+            }
+
+            list.innerHTML = otherUsers.map(u => `
+                <div class="user-list-item" onclick="App.callOnlineUser('${u.peerId}', '${u.pseudo}')">
+                    <div class="user-status-dot"></div>
+                    <div class="user-avatar-small">${u.pseudo.charAt(0).toUpperCase()}</div>
+                    <div class="user-info-small">
+                        <div class="user-name-small">${u.pseudo}</div>
+                        <div class="user-peer-small">${u.peerId.substring(0, 8)}...</div>
+                    </div>
+                    <div style="color:var(--neon-cyan)"><i class="fas fa-phone"></i></div>
+                </div>
+            `).join('');
+        },
+
+        renderContacts: function() {
+            const list = document.getElementById('contactList');
+            if (!list) return;
+
+            if (App.state.contacts.length === 0) {
+                list.innerHTML = '<div style="text-align:center; color:#666; padding:20px;">AUCUN CONTACT</div>';
+                return;
+            }
+
+            list.innerHTML = App.state.contacts.map(c => `
+                <div class="contact-item">
+                    <div class="contact-avatar">${c.name.charAt(0).toUpperCase()}</div>
+                    <div class="contact-info">
+                        <div class="contact-name">${c.name}</div>
+                        <div class="contact-id">${c.id.substring(0, 8)}...</div>
+                    </div>
+                    <div class="contact-actions">
+                        <div class="contact-call-btn" onclick="event.stopPropagation(); App.callContact('${c.id}', '${c.name}')">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <div class="contact-delete-btn" onclick="event.stopPropagation(); App.deleteContact('${c.name}', '${c.id}')">
+                            <i class="fas fa-trash"></i>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    };
+
+    // Initialisation
+    window.onload = () => App.init();
+</script>
+</body>
+</html>
