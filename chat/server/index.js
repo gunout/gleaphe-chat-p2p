@@ -3,7 +3,6 @@ const http = require('http');
 const socketIO = require('socket.io');
 const cors = require('cors');
 const path = require('path');
-require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
@@ -21,12 +20,18 @@ app.use(express.static(path.join(__dirname, '../public')));
 // Stockage des utilisateurs connectés
 let onlineUsers = [];
 
-// Socket.IO pour la communication en temps réel
+// Statistiques
+let totalConnections = 0;
+let messagesSent = 0;
+
 io.on('connection', (socket) => {
-  console.log('🔵 Nouvelle connexion:', socket.id);
+  totalConnections++;
+  console.log(`🔵 Gleaphe Chat - Nouvelle connexion: ${socket.id} (Total: ${totalConnections})`);
 
   // Quand un utilisateur se connecte
   socket.on('user-connect', (userData) => {
+    console.log(`👤 ${userData.pseudo} a rejoint Gleaphe Chat`);
+    
     const user = {
       socketId: socket.id,
       peerId: userData.peerId,
@@ -35,79 +40,111 @@ io.on('connection', (socket) => {
       lastSeen: Date.now()
     };
 
-    // Vérifier si l'utilisateur existe déjà
-    const existingUser = onlineUsers.find(u => u.peerId === userData.peerId);
-    if (!existingUser) {
-      onlineUsers.push(user);
+    // Mettre à jour ou ajouter l'utilisateur
+    const existingIndex = onlineUsers.findIndex(u => u.peerId === userData.peerId);
+    if (existingIndex !== -1) {
+      onlineUsers[existingIndex] = user;
     } else {
-      existingUser.socketId = socket.id;
-      existingUser.status = 'online';
-      existingUser.lastSeen = Date.now();
+      onlineUsers.push(user);
     }
 
-    console.log('👤 Utilisateurs en ligne:', onlineUsers.length);
-    
-    // Envoyer la liste mise à jour à tous
+    // Notifier tous les clients
     io.emit('users-update', onlineUsers);
-  });
-
-  // Quand un utilisateur se déconnecte
-  socket.on('disconnect', () => {
-    console.log('🔴 Déconnexion:', socket.id);
     
-    // Marquer comme hors ligne ou supprimer
-    const userIndex = onlineUsers.findIndex(u => u.socketId === socket.id);
-    if (userIndex !== -1) {
-      onlineUsers[userIndex].status = 'offline';
-      onlineUsers[userIndex].lastSeen = Date.now();
-      
-      // Garder l'utilisateur pendant 30 secondes au cas où il revienne
-      setTimeout(() => {
-        const user = onlineUsers.find(u => u.socketId === socket.id);
-        if (user && user.status === 'offline') {
-          onlineUsers = onlineUsers.filter(u => u.socketId !== socket.id);
-          io.emit('users-update', onlineUsers);
-        }
-      }, 30000);
-    }
+    // Notification de bienvenue
+    socket.emit('notification', {
+      type: 'welcome',
+      message: `Bienvenue sur Gleaphe Chat ${userData.pseudo} !`
+    });
+  });
+
+  // Message texte
+  socket.on('send-message', (data) => {
+    messagesSent++;
+    console.log(`💬 Message de ${data.from}: ${data.text}`);
     
-    io.emit('users-update', onlineUsers);
-  });
-
-  // Demande de la liste des utilisateurs
-  socket.on('get-users', () => {
-    socket.emit('users-update', onlineUsers);
-  });
-
-  // Envoi d'une notification
-  socket.on('send-notification', (data) => {
-    const targetUser = onlineUsers.find(u => u.peerId === data.targetId);
+    // Envoyer au destinataire spécifique
+    const targetUser = onlineUsers.find(u => u.peerId === data.to);
     if (targetUser) {
-      io.to(targetUser.socketId).emit('notification', {
+      io.to(targetUser.socketId).emit('new-message', {
         from: data.from,
-        type: data.type,
-        message: data.message
+        fromPseudo: data.fromPseudo,
+        text: data.text,
+        timestamp: Date.now()
       });
     }
   });
 
-  // Ping pour garder la connexion active
+  // Cadeau/effet
+  socket.on('send-gift', (data) => {
+    const targetUser = onlineUsers.find(u => u.peerId === data.to);
+    if (targetUser) {
+      io.to(targetUser.socketId).emit('gift-received', {
+        from: data.from,
+        fromPseudo: data.fromPseudo,
+        type: data.type
+      });
+    }
+  });
+
+  // Déconnexion
+  socket.on('disconnect', () => {
+    console.log(`🔴 Déconnexion: ${socket.id}`);
+    
+    const user = onlineUsers.find(u => u.socketId === socket.id);
+    if (user) {
+      console.log(`👋 ${user.pseudo} a quitté Gleaphe Chat`);
+      
+      // Notifier les autres
+      io.emit('user-left', {
+        pseudo: user.pseudo,
+        peerId: user.peerId
+      });
+    }
+    
+    onlineUsers = onlineUsers.filter(u => u.socketId !== socket.id);
+    io.emit('users-update', onlineUsers);
+  });
+
+  // Ping pour maintenir la connexion
   socket.on('ping', () => {
     const user = onlineUsers.find(u => u.socketId === socket.id);
     if (user) {
       user.lastSeen = Date.now();
     }
+    socket.emit('pong');
   });
 });
 
-// Nettoyage périodique des utilisateurs inactifs (plus de 2 minutes)
+// Nettoyage des utilisateurs inactifs (plus de 30 secondes)
 setInterval(() => {
   const now = Date.now();
-  onlineUsers = onlineUsers.filter(u => (now - u.lastSeen) < 120000);
-  io.emit('users-update', onlineUsers);
-}, 30000);
+  const before = onlineUsers.length;
+  onlineUsers = onlineUsers.filter(u => (now - u.lastSeen) < 30000);
+  if (onlineUsers.length !== before) {
+    console.log(`🧹 Nettoyage: ${before - onlineUsers.length} utilisateurs inactifs supprimés`);
+    io.emit('users-update', onlineUsers);
+  }
+}, 10000);
 
-// API REST pour les contacts (optionnel)
+// Routes API
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
+app.get('/status', (req, res) => {
+  res.json({
+    name: 'Gleaphe Chat Server',
+    version: '1.0.0',
+    online: onlineUsers.length,
+    users: onlineUsers.map(u => ({ pseudo: u.pseudo, status: u.status })),
+    totalConnections: totalConnections,
+    messagesSent: messagesSent,
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.get('/api/users', (req, res) => {
   res.json(onlineUsers);
 });
@@ -117,27 +154,21 @@ app.get('/api/user/:peerId', (req, res) => {
   if (user) {
     res.json(user);
   } else {
-    res.status(404).json({ error: 'User not found' });
+    res.status(404).json({ error: 'Utilisateur non trouvé' });
   }
-});
-
-// Page de statut du serveur
-app.get('/status', (req, res) => {
-  res.json({
-    server: 'NEXUS CHAT SERVER',
-    online: onlineUsers.length,
-    users: onlineUsers,
-    timestamp: new Date().toISOString()
-  });
 });
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`
-  ╔════════════════════════════════╗
-  ║   NEXUS CHAT SERVER            ║
-  ║   🚀 Port: ${PORT}                 ║
-  ║   📡 Socket.IO prêt            ║
-  ╚════════════════════════════════╝
+  ╔════════════════════════════════════════╗
+  ║     GLEAPHE CHAT SERVER v1.0           ║
+  ║                                        ║
+  ║   🚀 Port: ${PORT}                        ║
+  ║   📡 Socket.IO prêt                     ║
+  ║   👥 Prêt à accueillir vos amis         ║
+  ║                                        ║
+  ║   http://localhost:${PORT}                ║
+  ╚════════════════════════════════════════╝
   `);
 });
