@@ -1,7 +1,6 @@
 const express = require('express');
 const http = require('http');
 const socketIO = require('socket.io');
-const cors = require('cors');
 const path = require('path');
 
 const app = express();
@@ -13,57 +12,67 @@ const io = socketIO(server, {
   }
 });
 
-app.use(cors());
-app.use(express.json());
-app.use(express.static(path.join(__dirname, '../public')));
+app.use(express.static('public'));
 
 // Stockage des utilisateurs connectés
 let onlineUsers = [];
 
-// Statistiques
-let totalConnections = 0;
-let messagesSent = 0;
-
 io.on('connection', (socket) => {
-  totalConnections++;
-  console.log(`🔵 Gleaphe Chat - Nouvelle connexion: ${socket.id} (Total: ${totalConnections})`);
+  console.log('✅ Nouvelle connexion:', socket.id);
 
   // Quand un utilisateur se connecte
   socket.on('user-connect', (userData) => {
-    console.log(`👤 ${userData.pseudo} a rejoint Gleaphe Chat`);
+    console.log('👤 Connexion de:', userData.pseudo, 'avec PeerID:', userData.peerId);
     
+    // Ajouter l'utilisateur
     const user = {
       socketId: socket.id,
       peerId: userData.peerId,
       pseudo: userData.pseudo,
-      status: 'online',
       lastSeen: Date.now()
     };
-
-    // Mettre à jour ou ajouter l'utilisateur
+    
+    // Vérifier si l'utilisateur existe déjà (mise à jour)
     const existingIndex = onlineUsers.findIndex(u => u.peerId === userData.peerId);
     if (existingIndex !== -1) {
       onlineUsers[existingIndex] = user;
     } else {
       onlineUsers.push(user);
     }
-
-    // Notifier tous les clients
+    
+    // IMPORTANT: Envoyer la liste à TOUS les clients connectés
+    console.log('📊 Utilisateurs en ligne:', onlineUsers.length);
     io.emit('users-update', onlineUsers);
     
-    // Notification de bienvenue
+    // Envoyer une notification de bienvenue
     socket.emit('notification', {
-      type: 'welcome',
-      message: `Bienvenue sur Gleaphe Chat ${userData.pseudo} !`
+      type: 'success',
+      message: 'Bienvenue sur Gleaphe Chat !'
     });
   });
 
-  // Message texte
-  socket.on('send-message', (data) => {
-    messagesSent++;
-    console.log(`💬 Message de ${data.from}: ${data.text}`);
+  // Quand un utilisateur se déconnecte
+  socket.on('disconnect', () => {
+    console.log('❌ Déconnexion:', socket.id);
     
-    // Envoyer au destinataire spécifique
+    // Retirer l'utilisateur
+    onlineUsers = onlineUsers.filter(u => u.socketId !== socket.id);
+    
+    // IMPORTANT: Mettre à jour TOUS les clients
+    console.log('📊 Utilisateurs restants:', onlineUsers.length);
+    io.emit('users-update', onlineUsers);
+  });
+
+  // Demande manuelle de la liste
+  socket.on('get-users', () => {
+    socket.emit('users-update', onlineUsers);
+  });
+
+  // Envoyer un message
+  socket.on('send-message', (data) => {
+    console.log('💬 Message de', data.from, ':', data.text);
+    
+    // Trouver le destinataire
     const targetUser = onlineUsers.find(u => u.peerId === data.to);
     if (targetUser) {
       io.to(targetUser.socketId).emit('new-message', {
@@ -75,38 +84,18 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Cadeau/effet
+  // Envoyer un cadeau
   socket.on('send-gift', (data) => {
     const targetUser = onlineUsers.find(u => u.peerId === data.to);
     if (targetUser) {
       io.to(targetUser.socketId).emit('gift-received', {
         from: data.from,
-        fromPseudo: data.fromPseudo,
-        type: data.type
+        fromPseudo: data.fromPseudo
       });
     }
   });
 
-  // Déconnexion
-  socket.on('disconnect', () => {
-    console.log(`🔴 Déconnexion: ${socket.id}`);
-    
-    const user = onlineUsers.find(u => u.socketId === socket.id);
-    if (user) {
-      console.log(`👋 ${user.pseudo} a quitté Gleaphe Chat`);
-      
-      // Notifier les autres
-      io.emit('user-left', {
-        pseudo: user.pseudo,
-        peerId: user.peerId
-      });
-    }
-    
-    onlineUsers = onlineUsers.filter(u => u.socketId !== socket.id);
-    io.emit('users-update', onlineUsers);
-  });
-
-  // Ping pour maintenir la connexion
+  // Ping pour garder la connexion active
   socket.on('ping', () => {
     const user = onlineUsers.find(u => u.socketId === socket.id);
     if (user) {
@@ -116,59 +105,27 @@ io.on('connection', (socket) => {
   });
 });
 
-// Nettoyage des utilisateurs inactifs (plus de 30 secondes)
-setInterval(() => {
-  const now = Date.now();
-  const before = onlineUsers.length;
-  onlineUsers = onlineUsers.filter(u => (now - u.lastSeen) < 30000);
-  if (onlineUsers.length !== before) {
-    console.log(`🧹 Nettoyage: ${before - onlineUsers.length} utilisateurs inactifs supprimés`);
-    io.emit('users-update', onlineUsers);
-  }
-}, 10000);
-
-// Routes API
+// Route principale
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/index.html'));
+  res.sendFile(__dirname + '/public/index.html');
 });
 
+// Route de statut
 app.get('/status', (req, res) => {
   res.json({
-    name: 'Gleaphe Chat Server',
-    version: '1.0.0',
+    server: 'Gleaphe Chat',
     online: onlineUsers.length,
-    users: onlineUsers.map(u => ({ pseudo: u.pseudo, status: u.status })),
-    totalConnections: totalConnections,
-    messagesSent: messagesSent,
-    uptime: process.uptime(),
-    timestamp: new Date().toISOString()
+    users: onlineUsers.map(u => ({ pseudo: u.pseudo, peerId: u.peerId }))
   });
-});
-
-app.get('/api/users', (req, res) => {
-  res.json(onlineUsers);
-});
-
-app.get('/api/user/:peerId', (req, res) => {
-  const user = onlineUsers.find(u => u.peerId === req.params.peerId);
-  if (user) {
-    res.json(user);
-  } else {
-    res.status(404).json({ error: 'Utilisateur non trouvé' });
-  }
 });
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`
-  ╔════════════════════════════════════════╗
-  ║     GLEAPHE CHAT SERVER v1.0           ║
-  ║                                        ║
-  ║   🚀 Port: ${PORT}                        ║
-  ║   📡 Socket.IO prêt                     ║
-  ║   👥 Prêt à accueillir vos amis         ║
-  ║                                        ║
-  ║   http://localhost:${PORT}                ║
-  ╚════════════════════════════════════════╝
+  ╔════════════════════════════════╗
+  ║   GLEAPHE CHAT SERVER          ║
+  ║   🚀 Port: ${PORT}                 ║
+  ║   📡 En attente de clients...   ║
+  ╚════════════════════════════════╝
   `);
 });
