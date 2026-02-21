@@ -12,7 +12,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        /* Styles identiques au précédent */
         :root {
             --bg-deep: #020205;
             --bg-hud: rgba(10, 20, 30, 0.85);
@@ -296,7 +295,7 @@
             overflow-y: auto;
         }
 
-        /* GRILLE COMMUNAUTAIRE - SIMPLE AFFICHAGE SANS VIDÉO */
+        /* GRILLE COMMUNAUTAIRE */
         .community-grid {
             flex: 2;
             padding: 10px;
@@ -827,7 +826,7 @@
         </div>
 
         <div class="main-content">
-            <!-- GRILLE COMMUNAUTAIRE - SANS VIDÉO -->
+            <!-- GRILLE COMMUNAUTAIRE -->
             <div class="community-grid" id="communityGrid"></div>
 
             <!-- ZONE D'APPEL PRIVÉ -->
@@ -987,7 +986,7 @@
         peer.on('call', (call) => {
             console.log('📞 Appel entrant de:', call.peer);
             
-            // Uniquement pour les appels privés
+            // Gérer les appels privés entrants
             if (!privateCall) {
                 const caller = onlineUsers.find(u => u.peerId === call.peer);
                 if (caller) {
@@ -997,9 +996,12 @@
                         <div style="font-size:0.7rem; color:#888;">${call.peer}</div>
                     `;
                     document.getElementById('incomingCallModal').classList.add('active');
+                } else {
+                    // Si on ne connaît pas l'appelant, refuser
+                    call.close();
                 }
             } else {
-                // Refuser tout autre appel
+                // Déjà en appel, refuser
                 call.close();
             }
         });
@@ -1049,6 +1051,13 @@
                 endPrivateCall();
             }
         });
+
+        // Ping pour garder la connexion active
+        setInterval(() => {
+            if (socket && socket.connected) {
+                socket.emit('ping');
+            }
+        }, 10000);
     }
 
     // ===== GRILLE COMMUNAUTAIRE =====
