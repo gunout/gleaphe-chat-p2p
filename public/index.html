@@ -711,9 +711,8 @@
             color: #fff;
         }
 
-        /* ===== VERSION MOBILE ===== */
+        /* VERSION MOBILE */
         @media (max-width: 768px) {
-            /* Ajustement des espacements */
             .main-content {
                 flex-direction: column;
                 padding-top: 80px;
@@ -721,7 +720,6 @@
                 overflow-y: auto;
             }
 
-            /* Grille communautaire en premier */
             .community-grid {
                 order: 1;
                 grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -729,7 +727,6 @@
                 padding: 8px;
             }
 
-            /* Zone d'appel privé en second */
             .private-call-area {
                 order: 2;
                 border-left: none;
@@ -742,12 +739,6 @@
                 border-radius: 10px 10px 0 0;
             }
 
-            /* Vidéo plus petites sur mobile */
-            .private-video {
-                max-width: 100%;
-            }
-
-            /* Boutons plus compacts */
             .private-controls {
                 padding: 10px 5px;
                 gap: 5px;
@@ -763,19 +754,16 @@
                 font-size: 0.9rem;
             }
 
-            /* Chat moins haut */
             .global-chat {
                 height: 130px;
             }
 
-            /* ID plus petit */
             .my-id-container {
                 top: 60px;
                 font-size: 0.5rem;
                 padding: 3px 8px;
             }
 
-            /* Messages plus petits */
             .chat-message {
                 font-size: 0.7rem;
                 padding: 3px 6px;
@@ -785,7 +773,6 @@
                 font-size: 0.7rem;
             }
 
-            /* Liste des utilisateurs plus petite */
             .users-list {
                 max-height: 150px;
             }
@@ -796,7 +783,6 @@
             }
         }
 
-        /* Très petits écrans */
         @media (max-width: 480px) {
             .community-grid {
                 grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -817,7 +803,6 @@
             }
         }
 
-        /* Mode paysage sur mobile */
         @media (max-width: 768px) and (orientation: landscape) {
             .main-content {
                 padding-bottom: 120px;
@@ -921,10 +906,10 @@
                     </button>
                 </div>
 
-                <!-- LISTE DES UTILISATEURS -->
+                <!-- LISTE DES UTILISATEURS POUR APPELS PRIVÉS -->
                 <div class="users-list" id="usersList">
                     <div style="color:#666; text-align:center; padding:10px;">
-                        Chargement des utilisateurs...
+                        Cliquez sur un utilisateur pour l'appeler
                     </div>
                 </div>
             </div>
@@ -960,8 +945,8 @@
     let localStream = null;
     let currentUser = null;
     let onlineUsers = [];
-    let communityCalls = new Map();
-    let privateCall = null;
+    let communityCalls = new Map(); // Pour les flux vidéo de la communauté
+    let privateCall = null; // Pour l'appel privé
     let isMicOn = true;
     let isCameraOn = true;
     let incomingCallData = null;
@@ -1035,6 +1020,7 @@
                 privateLocalVideo.srcObject = localStream;
             }
 
+            // Initialiser le bouton raccrocher (désactivé au départ)
             document.getElementById('endCallBtn').classList.add('disabled');
 
             addSelfToCommunity();
@@ -1045,6 +1031,7 @@
         peer.on('call', (call) => {
             console.log('📞 Appel entrant de:', call.peer);
             
+            // Si pas d'appel privé en cours, c'est un appel privé entrant
             if (!privateCall) {
                 const caller = onlineUsers.find(u => u.peerId === call.peer);
                 if (caller) {
@@ -1055,7 +1042,9 @@
                     `;
                     document.getElementById('incomingCallModal').classList.add('active');
                 }
-            } else {
+            } 
+            // Sinon c'est un appel pour le flux communautaire
+            else {
                 handleCommunityCall(call);
             }
         });
@@ -1072,6 +1061,7 @@
                 socket.emit('ping');
             }
             
+            // Maintenir les flux communautaires existants
             onlineUsers.forEach(user => {
                 if (!communityCalls.has(user.peerId) && user.peerId !== currentUser?.peerId) {
                     establishCommunityCall(user.peerId);
@@ -1082,7 +1072,7 @@
 
     // ===== GESTION DES APPELS COMMUNAUTAIRES =====
     function handleCommunityCall(call) {
-        console.log('🌐 Appel communautaire de:', call.peer);
+        console.log('🌐 Flux communautaire de:', call.peer);
         
         call.answer(localStream);
         
@@ -1100,7 +1090,7 @@
         });
         
         call.on('close', () => {
-            console.log('🔴 Appel communautaire fermé avec:', call.peer);
+            console.log('🔴 Flux communautaire fermé avec:', call.peer);
             communityCalls.delete(call.peer);
         });
         
@@ -1134,6 +1124,7 @@
             
             updateUsersList();
             
+            // Ajouter les nouveaux utilisateurs à la grille communautaire
             onlineUsers.forEach(user => {
                 if (!previousUsers.includes(user.peerId)) {
                     addToCommunity(user);
@@ -1213,6 +1204,7 @@
         
         grid.appendChild(card);
         
+        // Établir le flux communautaire
         setTimeout(() => establishCommunityCall(user.peerId), 1000);
     }
 
@@ -1234,7 +1226,7 @@
         if (!peer || !localStream || communityCalls.has(peerId)) return;
         
         try {
-            console.log('🌐 Établissement appel communautaire vers:', peerId);
+            console.log('🌐 Établissement flux communautaire vers:', peerId);
             
             const call = peer.call(peerId, localStream);
             
@@ -1252,17 +1244,17 @@
             });
             
             call.on('close', () => {
-                console.log('🔴 Appel communautaire fermé avec:', peerId);
+                console.log('🔴 Flux communautaire fermé avec:', peerId);
                 communityCalls.delete(peerId);
             });
             
             communityCalls.set(peerId, call);
         } catch (err) {
-            console.error('❌ Erreur appel communautaire:', err);
+            console.error('❌ Erreur flux communautaire:', err);
         }
     }
 
-    // ===== LISTE DES UTILISATEURS =====
+    // ===== LISTE DES UTILISATEURS POUR APPELS PRIVÉS =====
     function updateUsersList() {
         const list = document.getElementById('usersList');
         
