@@ -286,12 +286,12 @@
             cursor: pointer;
         }
 
-        /* MAIN CONTENT - CORRECTION DU LAYOUT */
+        /* MAIN CONTENT */
         .main-content {
             display: flex;
             height: 100%;
-            padding-top: 100px; /* Espace pour la top bar */
-            padding-bottom: 200px; /* Espace pour le chat */
+            padding-top: 100px;
+            padding-bottom: 160px;
             overflow: hidden;
         }
 
@@ -301,7 +301,7 @@
             overflow-y: auto;
             padding: 10px;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
             gap: 10px;
             height: 100%;
         }
@@ -314,6 +314,7 @@
             position: relative;
             backdrop-filter: blur(5px);
             height: fit-content;
+            transition: all 0.3s;
         }
 
         .community-card.self {
@@ -349,6 +350,9 @@
             font-family: var(--font-head);
             color: var(--neon-cyan);
             font-size: 0.8rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .community-status {
@@ -387,16 +391,18 @@
             font-size: 1.5rem;
         }
 
-        /* ZONE D'APPEL PRIVÉ - CORRECTION */
+        /* ZONE D'APPEL PRIVÉ */
         .private-call-area {
             flex: 1;
             border-left: 2px solid var(--neon-pink);
-            background: rgba(0,0,0,0.9);
+            background: rgba(0,0,0,0.95);
             padding: 10px;
             display: flex;
             flex-direction: column;
             height: 100%;
-            min-width: 250px;
+            min-width: 280px;
+            position: relative;
+            z-index: 10;
         }
 
         .private-call-header {
@@ -442,108 +448,126 @@
             transform: scaleX(-1);
         }
 
-        /* CONTROLES PRIVÉS - TOUJOURS VISIBLES */
+        /* CONTROLES PRIVÉS */
         .private-controls {
             flex: 0 0 auto;
             display: flex;
-            gap: 5px;
+            gap: 8px;
             justify-content: center;
-            margin: 10px 0;
-            padding: 5px;
-            background: rgba(0,0,0,0.5);
-            border-radius: 5px;
+            margin: 15px 0;
+            padding: 12px 8px;
+            background: rgba(0,0,0,0.9);
+            border-radius: 8px;
+            border: 1px solid var(--neon-cyan);
             flex-wrap: wrap;
+            position: sticky;
+            top: 0;
+            z-index: 20;
         }
 
         .private-btn {
-            padding: 8px 12px;
-            background: rgba(0,0,0,0.5);
+            padding: 10px 15px;
+            background: rgba(0,0,0,0.7);
             border: 1px solid var(--neon-pink);
             color: #fff;
-            border-radius: 3px;
+            border-radius: 5px;
             cursor: pointer;
-            font-size: 0.7rem;
+            font-size: 0.8rem;
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 8px;
+            transition: all 0.3s;
+            min-width: 100px;
+            justify-content: center;
         }
 
         .private-btn:hover {
             background: var(--neon-pink);
+            transform: scale(1.05);
+            box-shadow: 0 0 15px var(--neon-pink);
         }
 
-        /* LISTE DES UTILISATEURS - SCROLLABLE */
+        .private-btn i {
+            font-size: 1rem;
+        }
+
+        /* LISTE DES UTILISATEURS */
         .users-list {
             flex: 1;
             overflow-y: auto;
             margin-top: 10px;
             border-top: 1px solid var(--neon-cyan);
             padding-top: 10px;
-            min-height: 0; /* Important pour le scrolling */
+            min-height: 100px;
         }
 
         .user-list-item {
             display: flex;
             align-items: center;
-            gap: 5px;
-            padding: 8px;
+            gap: 8px;
+            padding: 10px;
             background: rgba(255,255,255,0.05);
-            margin-bottom: 4px;
-            border-radius: 3px;
+            margin-bottom: 5px;
+            border-radius: 5px;
             cursor: pointer;
             transition: 0.2s;
+            font-size: 0.85rem;
         }
 
         .user-list-item:hover {
             background: rgba(0,243,255,0.2);
+            transform: translateX(5px);
         }
 
         .user-list-item.on-call {
-            border-left: 3px solid var(--neon-pink);
-            background: rgba(255,0,85,0.1);
+            border-left: 4px solid var(--neon-pink);
+            background: rgba(255,0,85,0.15);
         }
 
-        /* CHAT GLOBAL - FIXÉ EN BAS */
+        /* CHAT GLOBAL */
         .global-chat {
             position: absolute;
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 180px;
+            height: 150px;
             border-top: 2px solid var(--neon-cyan);
-            background: rgba(0,0,0,0.95);
-            padding: 10px;
+            background: rgba(0,0,0,0.98);
+            padding: 8px 15px;
             display: flex;
             flex-direction: column;
             z-index: 30;
+            backdrop-filter: blur(10px);
         }
 
         .chat-messages {
             flex: 1;
             overflow-y: auto;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 4px;
+            padding-right: 5px;
         }
 
         .chat-message {
-            background: rgba(255,255,255,0.05);
+            background: rgba(255,255,255,0.03);
             border-left: 3px solid var(--neon-cyan);
-            padding: 5px 10px;
-            font-size: 0.8rem;
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            border-radius: 0 3px 3px 0;
         }
 
         .chat-message.self {
             border-left-color: var(--neon-pink);
-            background: rgba(255, 0, 85, 0.1);
+            background: rgba(255, 0, 85, 0.08);
         }
 
         .chat-message-header {
             display: flex;
             justify-content: space-between;
             margin-bottom: 2px;
-            font-size: 0.6rem;
+            font-size: 0.55rem;
         }
 
         .chat-message-sender {
@@ -556,45 +580,102 @@
 
         .chat-input-area {
             display: flex;
-            gap: 10px;
+            gap: 8px;
+            height: 35px;
         }
 
         .chat-input {
             flex: 1;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
             border: 1px solid var(--neon-cyan);
             color: #fff;
-            padding: 8px;
+            padding: 0 12px;
             font-family: var(--font-main);
             outline: none;
-            border-radius: 3px;
-            font-size: 13px;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            height: 100%;
+        }
+
+        .chat-input:focus {
+            box-shadow: 0 0 10px var(--neon-cyan);
         }
 
         .btn-send {
-            width: 35px;
-            height: 35px;
+            width: 40px;
+            height: 100%;
             background: var(--neon-cyan);
             border: none;
-            border-radius: 3px;
+            border-radius: 5px;
             color: #000;
-            font-size: 0.9rem;
+            font-size: 1rem;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: 0.3s;
         }
 
+        .btn-send:hover {
+            background: var(--neon-pink);
+            color: #fff;
+            transform: scale(1.05);
+        }
+
+        /* MODE MOBILE */
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+                padding-bottom: 140px;
+            }
+            
+            .private-call-area {
+                border-left: none;
+                border-top: 2px solid var(--neon-pink);
+                min-width: 100%;
+                height: 35%;
+                min-height: 280px;
+            }
+            
+            .community-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                max-height: 65%;
+            }
+            
+            .private-controls {
+                position: static;
+                padding: 8px 5px;
+            }
+            
+            .private-btn {
+                padding: 8px 10px;
+                min-width: 70px;
+                font-size: 0.7rem;
+            }
+            
+            .global-chat {
+                height: 130px;
+            }
+            
+            .my-id-container {
+                top: 60px;
+                font-size: 0.5rem;
+            }
+        }
+
+        /* NOTIFICATIONS */
         .notification {
             position: fixed;
-            bottom: 200px;
+            bottom: 160px;
             right: 20px;
             background: #000;
             border: 1px solid var(--neon-cyan);
-            padding: 10px;
+            padding: 12px 20px;
             border-radius: 5px;
             z-index: 1000;
             animation: slideIn 0.3s;
+            font-size: 0.9rem;
+            box-shadow: 0 0 20px rgba(0,243,255,0.3);
         }
 
         @keyframes slideIn {
@@ -602,6 +683,7 @@
             to { transform: translateX(0); }
         }
 
+        /* MODAL APPEL ENTRANT */
         .modal {
             position: absolute;
             top: 50%;
@@ -716,7 +798,7 @@
                     </div>
                 </div>
 
-                <!-- CONTROLES TOUJOURS VISIBLES -->
+                <!-- CONTROLES PRIVÉS -->
                 <div class="private-controls">
                     <button class="private-btn" onclick="toggleCamera()" id="privateCamBtn">
                         <i class="fas fa-video"></i> Caméra
@@ -768,12 +850,14 @@
     let localStream = null;
     let currentUser = null;
     let onlineUsers = [];
-    let communityCalls = new Map(); // Pour stocker les appels communautaires
+    let communityCalls = new Map();
     let privateCall = null;
     let isMicOn = true;
     let isCameraOn = true;
     let incomingCallData = null;
-    let reconnectTimers = new Map(); // Pour gérer les reconnexions
+    let reconnectTimers = new Map();
+    let pingInterval = null;
+    let keepAliveInterval = null;
 
     // ===== CONNEXION =====
     async function connect() {
@@ -800,7 +884,6 @@
             
             document.getElementById('permissionStatus').innerHTML = '✅ CONNEXION...';
 
-            // Initialiser PeerJS
             initializePeer(pseudo);
 
         } catch(e) {
@@ -839,24 +922,19 @@
             document.getElementById('view-login').classList.remove('active');
             document.getElementById('view-main').classList.add('active');
 
-            // Configurer les vidéos privées
             const privateLocalVideo = document.getElementById('privateLocalVideo');
             if (privateLocalVideo) {
                 privateLocalVideo.srcObject = localStream;
             }
 
-            // Ajouter sa propre carte à la communauté
             addSelfToCommunity();
-
-            // Connexion Socket.IO
             connectToServer();
+            startKeepAlive();
         });
 
         peer.on('call', (call) => {
             console.log('📞 Appel entrant de:', call.peer);
             
-            // Vérifier si c'est un appel privé ou communautaire
-            // On considère que c'est un appel privé si on n'est pas déjà en appel avec cette personne
             if (!privateCall) {
                 const caller = onlineUsers.find(u => u.peerId === call.peer);
                 if (caller) {
@@ -868,7 +946,6 @@
                     document.getElementById('incomingCallModal').classList.add('active');
                 }
             } else {
-                // C'est probablement un appel communautaire
                 handleCommunityCall(call);
             }
         });
@@ -876,6 +953,22 @@
         peer.on('error', (err) => {
             console.error('❌ Erreur PeerJS:', err);
         });
+    }
+
+    // ===== GARDIEN DE CONNEXION =====
+    function startKeepAlive() {
+        keepAliveInterval = setInterval(() => {
+            if (socket && socket.connected) {
+                socket.emit('ping');
+            }
+            
+            // Maintenir les connexions communautaires
+            onlineUsers.forEach(user => {
+                if (!communityCalls.has(user.peerId) && user.peerId !== currentUser?.peerId) {
+                    establishCommunityCall(user.peerId);
+                }
+            });
+        }, 5000);
     }
 
     // ===== GESTION DES APPELS COMMUNAUTAIRES =====
@@ -892,8 +985,14 @@
             
             if (video) {
                 video.srcObject = remoteStream;
+                video.play().catch(e => console.log('Erreur play:', e));
                 if (placeholder) placeholder.style.display = 'none';
             }
+        });
+        
+        call.on('close', () => {
+            console.log('🔴 Appel communautaire fermé avec:', call.peer);
+            communityCalls.delete(call.peer);
         });
         
         communityCalls.set(call.peer, call);
@@ -903,7 +1002,9 @@
     function connectToServer() {
         socket = io({
             transports: ['websocket', 'polling'],
-            reconnection: true
+            reconnection: true,
+            reconnectionAttempts: Infinity,
+            reconnectionDelay: 1000
         });
 
         socket.on('connect', () => {
@@ -922,20 +1023,12 @@
             
             document.getElementById('onlineCount').innerText = users.length;
             
-            // Mettre à jour la liste des utilisateurs
             updateUsersList();
             
-            // Gérer les nouveaux utilisateurs
+            // Ajouter les nouveaux utilisateurs
             onlineUsers.forEach(user => {
                 if (!previousUsers.includes(user.peerId)) {
                     addToCommunity(user);
-                }
-            });
-
-            // Gérer les utilisateurs déconnectés
-            previousUsers.forEach(peerId => {
-                if (!onlineUsers.find(u => u.peerId === peerId)) {
-                    removeFromCommunity(peerId);
                 }
             });
         });
@@ -948,11 +1041,17 @@
             console.log('👋 Utilisateur déconnecté:', peerId);
             removeFromCommunity(peerId);
         });
+
+        socket.on('disconnect', () => {
+            console.log('❌ Socket.IO déconnecté, tentative de reconnexion...');
+        });
     }
 
     // ===== GRILLE COMMUNAUTAIRE =====
     function addSelfToCommunity() {
         const grid = document.getElementById('communityGrid');
+        
+        if (document.getElementById(`community-${currentUser.peerId}`)) return;
         
         const card = document.createElement('div');
         card.className = 'community-card self';
@@ -1006,7 +1105,6 @@
         
         grid.appendChild(card);
         
-        // Établir une connexion pour le flux communautaire
         setTimeout(() => establishCommunityCall(user.peerId), 1000);
     }
 
@@ -1014,23 +1112,18 @@
         const card = document.getElementById(`community-${peerId}`);
         if (card) card.remove();
         
-        // Fermer l'appel communautaire
         if (communityCalls.has(peerId)) {
             communityCalls.get(peerId).close();
             communityCalls.delete(peerId);
         }
         
-        // Si c'était l'utilisateur en appel privé
         if (privateCall && privateCall.peer === peerId) {
             endPrivateCall();
         }
     }
 
     function establishCommunityCall(peerId) {
-        if (!peer || !localStream) return;
-        
-        // Vérifier si on a déjà un appel
-        if (communityCalls.has(peerId)) return;
+        if (!peer || !localStream || communityCalls.has(peerId)) return;
         
         try {
             console.log('🌐 Établissement appel communautaire vers:', peerId);
@@ -1045,6 +1138,7 @@
                 
                 if (video) {
                     video.srcObject = remoteStream;
+                    video.play().catch(e => console.log('Erreur play:', e));
                     if (placeholder) placeholder.style.display = 'none';
                 }
             });
@@ -1057,15 +1151,6 @@
             communityCalls.set(peerId, call);
         } catch (err) {
             console.error('❌ Erreur appel communautaire:', err);
-            
-            // Réessayer après un délai
-            if (!reconnectTimers.has(peerId)) {
-                const timer = setTimeout(() => {
-                    reconnectTimers.delete(peerId);
-                    establishCommunityCall(peerId);
-                }, 5000);
-                reconnectTimers.set(peerId, timer);
-            }
         }
     }
 
@@ -1112,6 +1197,7 @@
                 
                 if (remoteVideo) {
                     remoteVideo.srcObject = remoteStream;
+                    remoteVideo.play().catch(e => console.log('Erreur play:', e));
                     remoteContainer.style.display = 'block';
                     document.getElementById('remoteVideoLabel').innerHTML = `📞 ${pseudo}`;
                 }
@@ -1153,6 +1239,7 @@
                 
                 if (remoteVideo) {
                     remoteVideo.srcObject = remoteStream;
+                    remoteVideo.play().catch(e => console.log('Erreur play:', e));
                     remoteContainer.style.display = 'block';
                     document.getElementById('remoteVideoLabel').innerHTML = `📞 ${caller.pseudo}`;
                 }
@@ -1181,7 +1268,6 @@
             document.getElementById('endCallBtn').style.display = 'none';
             
             if (remoteVideo.srcObject) {
-                remoteVideo.srcObject.getTracks().forEach(track => track.stop());
                 remoteVideo.srcObject = null;
             }
             
@@ -1251,7 +1337,6 @@
         chat.appendChild(msgDiv);
         chat.scrollTop = chat.scrollHeight;
         
-        // Limiter le nombre de messages
         while (chat.children.length > 50) {
             chat.removeChild(chat.children[0]);
         }
@@ -1279,12 +1364,13 @@
         document.getElementById('clock').innerText = now.toLocaleTimeString();
     }, 1000);
 
-    // Ping pour garder la connexion active
-    setInterval(() => {
-        if (socket && socket.connected) {
-            socket.emit('ping');
-        }
-    }, 5000);
+    // Nettoyage à la fermeture
+    window.addEventListener('beforeunload', () => {
+        if (keepAliveInterval) clearInterval(keepAliveInterval);
+        if (pingInterval) clearInterval(pingInterval);
+        if (socket) socket.disconnect();
+        if (peer) peer.destroy();
+    });
 
     // Initialisation
     window.onload = () => {
@@ -1292,6 +1378,19 @@
         if (savedPseudo) {
             document.getElementById('loginPseudo').value = savedPseudo;
         }
+        
+        // Gestion du redimensionnement
+        function handleResize() {
+            const mainContent = document.querySelector('.main-content');
+            if (window.innerWidth <= 768) {
+                mainContent.style.paddingBottom = '140px';
+            } else {
+                mainContent.style.paddingBottom = '160px';
+            }
+        }
+        
+        window.addEventListener('resize', handleResize);
+        handleResize();
     };
 
     // Gestion de la touche Entrée
