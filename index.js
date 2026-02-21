@@ -28,7 +28,7 @@ io.on('connection', (socket) => {
 
   // ===== CONNEXION UTILISATEUR =====
   socket.on('user-connect', (userData) => {
-    console.log('👤 Utilisateur connecté:', userData.pseudo, userData.peerId);
+    console.log('👤 Utilisateur connecté:', userData.pseudo, 'PeerID:', userData.peerId);
     
     const user = {
       socketId: socket.id,
@@ -45,7 +45,10 @@ io.on('connection', (socket) => {
       onlineUsers.push(user);
     }
     
-    // Envoyer la liste mise à jour à tous
+    console.log('📊 Total en ligne:', onlineUsers.length);
+    console.log('Liste des utilisateurs:', onlineUsers.map(u => u.pseudo));
+    
+    // Envoyer la liste mise à jour à tous les clients
     io.emit('users-update', onlineUsers);
   });
 
@@ -65,7 +68,9 @@ io.on('connection', (socket) => {
   // ===== POUR GARDER LA CONNEXION ACTIVE =====
   socket.on('ping', () => {
     const user = onlineUsers.find(u => u.socketId === socket.id);
-    if (user) user.lastSeen = Date.now();
+    if (user) {
+      user.lastSeen = Date.now();
+    }
     socket.emit('pong');
   });
 
@@ -78,14 +83,17 @@ io.on('connection', (socket) => {
     if (user) {
       console.log('👋 Utilisateur déconnecté:', user.pseudo);
       
+      // Retirer l'utilisateur de la liste
+      onlineUsers = onlineUsers.filter(u => u.socketId !== socket.id);
+      
       // Notifier tous les autres que cet utilisateur s'est déconnecté
       socket.broadcast.emit('user-disconnected', user.peerId);
+      
+      // Mettre à jour la liste pour tout le monde
+      io.emit('users-update', onlineUsers);
+      
+      console.log('📊 Nouveau total en ligne:', onlineUsers.length);
     }
-    
-    onlineUsers = onlineUsers.filter(u => u.socketId !== socket.id);
-    
-    // Mettre à jour la liste pour tout le monde
-    io.emit('users-update', onlineUsers);
   });
 });
 
@@ -95,10 +103,18 @@ setInterval(() => {
   const before = onlineUsers.length;
   
   // Supprimer les utilisateurs inactifs (plus de 30 secondes sans ping)
-  onlineUsers = onlineUsers.filter(u => (now - u.lastSeen) < 30000);
+  const activeUsers = onlineUsers.filter(u => (now - u.lastSeen) < 30000);
   
-  if (onlineUsers.length !== before) {
-    console.log(`🧹 Nettoyage: ${before - onlineUsers.length} inactifs retirés`);
+  if (activeUsers.length !== before) {
+    console.log(`🧹 Nettoyage: ${before - activeUsers.length} inactifs retirés`);
+    
+    // Trouver les utilisateurs qui ont été retirés
+    const removedUsers = onlineUsers.filter(u => !activeUsers.includes(u));
+    removedUsers.forEach(user => {
+      io.emit('user-disconnected', user.peerId);
+    });
+    
+    onlineUsers = activeUsers;
     io.emit('users-update', onlineUsers);
   }
 }, 10000);
@@ -109,7 +125,7 @@ app.get('/status', (req, res) => {
     status: 'OK',
     server: 'GLEAPHE GROUP CHAT',
     online: onlineUsers.length,
-    users: onlineUsers.map(u => u.pseudo),
+    users: onlineUsers.map(u => ({ pseudo: u.pseudo, peerId: u.peerId })),
     uptime: process.uptime(),
     timestamp: new Date().toISOString()
   });
@@ -125,7 +141,7 @@ server.listen(PORT, '0.0.0.0', () => {
   ║   📡 Socket.IO: OK                      ║
   ║   👥 Mode: Groupe (tous visibles)       ║
   ║   🔌 WebRTC Mesh Network                 ║
-  ║   🌐 ${req.headers.host || 'https://gleaphe-chat.up.railway.app'} ║
+  ║   🌐 http://localhost:${PORT}             ║
   ╚════════════════════════════════════════╝
   `);
 });
