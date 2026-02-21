@@ -180,13 +180,21 @@ setInterval(() => {
   const now = Date.now();
   const before = onlineUsers.length;
   
-  // Nettoyer les utilisateurs inactifs
+  // Nettoyer les utilisateurs inactifs (30 secondes d'inactivité)
   onlineUsers = onlineUsers.filter(u => (now - u.lastSeen) < 30000);
   
   // Nettoyer la file d'attente
   waitingUsers = waitingUsers.filter(u => {
     const user = onlineUsers.find(ou => ou.peerId === u.peerId);
     return user !== undefined;
+  });
+  
+  // Nettoyer les paires orphelines
+  const activePeerIds = new Set(onlineUsers.map(u => u.peerId));
+  Object.keys(callPairs).forEach(peerId => {
+    if (!activePeerIds.has(peerId)) {
+      delete callPairs[peerId];
+    }
   });
   
   if (onlineUsers.length !== before) {
@@ -201,6 +209,7 @@ app.get('/status', (req, res) => {
     server: 'GLEAPHE CHAT SERVER',
     online: onlineUsers.length,
     waiting: waitingUsers.length,
+    calls: Object.keys(callPairs).length / 2,
     users: onlineUsers.map(u => ({ pseudo: u.pseudo, searching: u.searching })),
     timestamp: new Date().toISOString()
   });
@@ -215,6 +224,7 @@ server.listen(PORT, '0.0.0.0', () => {
   ║   🚀 Port: ${PORT}                        ║
   ║   📡 Socket.IO: OK                      ║
   ║   👥 File d'attente active              ║
+  ║   🔌 WebRTC via PeerJS                  ║
   ║   🌐 https://gleaphe-chat.up.railway.app ║
   ╚════════════════════════════════════════╝
   `);
