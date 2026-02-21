@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
+        /* Styles identiques au précédent */
         :root {
             --bg-deep: #020205;
             --bg-hud: rgba(10, 20, 30, 0.85);
@@ -950,7 +951,7 @@
     let isMicOn = true;
     let isCameraOn = true;
     let incomingCallData = null;
-    let keepAliveInterval = null;
+    let pingInterval = null;
 
     // ===== CONNEXION =====
     async function connect() {
@@ -1025,7 +1026,7 @@
 
             addSelfToCommunity();
             connectToServer();
-            startKeepAlive();
+            startPingInterval();
         });
 
         peer.on('call', (call) => {
@@ -1054,20 +1055,13 @@
         });
     }
 
-    // ===== GARDIEN DE CONNEXION =====
-    function startKeepAlive() {
-        keepAliveInterval = setInterval(() => {
+    // ===== PING POUR GARDER LA CONNEXION =====
+    function startPingInterval() {
+        pingInterval = setInterval(() => {
             if (socket && socket.connected) {
                 socket.emit('ping');
             }
-            
-            // Maintenir les flux communautaires existants
-            onlineUsers.forEach(user => {
-                if (!communityCalls.has(user.peerId) && user.peerId !== currentUser?.peerId) {
-                    establishCommunityCall(user.peerId);
-                }
-            });
-        }, 5000);
+        }, 10000); // Ping toutes les 10 secondes
     }
 
     // ===== GESTION DES APPELS COMMUNAUTAIRES =====
@@ -1204,8 +1198,8 @@
         
         grid.appendChild(card);
         
-        // Établir le flux communautaire
-        setTimeout(() => establishCommunityCall(user.peerId), 1000);
+        // Établir le flux communautaire uniquement pour les nouveaux utilisateurs
+        establishCommunityCall(user.peerId);
     }
 
     function removeFromCommunity(peerId) {
@@ -1486,7 +1480,7 @@
 
     // Nettoyage à la fermeture
     window.addEventListener('beforeunload', () => {
-        if (keepAliveInterval) clearInterval(keepAliveInterval);
+        if (pingInterval) clearInterval(pingInterval);
         if (socket) socket.disconnect();
         if (peer) peer.destroy();
     });
