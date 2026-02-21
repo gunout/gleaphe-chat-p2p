@@ -286,24 +286,24 @@
             cursor: pointer;
         }
 
-        /* MAIN CONTENT */
+        /* MAIN CONTENT - SCROLLABLE */
         .main-content {
             display: flex;
             height: 100%;
             padding-top: 100px;
             padding-bottom: 160px;
-            overflow: hidden;
+            overflow-y: auto; /* Permet le scroll */
         }
 
         /* GRILLE COMMUNAUTAIRE */
         .community-grid {
             flex: 2;
-            overflow-y: auto;
             padding: 10px;
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
             gap: 10px;
-            height: 100%;
+            height: fit-content;
+            min-height: min-content;
         }
 
         .community-card {
@@ -391,7 +391,7 @@
             font-size: 1.5rem;
         }
 
-        /* ZONE D'APPEL PRIVÉ */
+        /* ZONE D'APPEL PRIVÉ - SÉPARÉE */
         .private-call-area {
             flex: 1;
             border-left: 2px solid var(--neon-pink);
@@ -399,10 +399,13 @@
             padding: 10px;
             display: flex;
             flex-direction: column;
-            height: 100%;
+            height: fit-content;
             min-width: 280px;
-            position: relative;
+            position: sticky;
+            top: 100px;
             z-index: 10;
+            max-height: calc(100vh - 260px);
+            overflow-y: auto;
         }
 
         .private-call-header {
@@ -522,6 +525,7 @@
             border-top: 1px solid var(--neon-cyan);
             padding-top: 10px;
             min-height: 100px;
+            max-height: 200px;
         }
 
         .user-list-item {
@@ -650,19 +654,19 @@
             .main-content {
                 flex-direction: column;
                 padding-bottom: 140px;
+                overflow-y: auto;
             }
             
             .private-call-area {
                 border-left: none;
                 border-top: 2px solid var(--neon-pink);
                 min-width: 100%;
-                height: 35%;
-                min-height: 280px;
+                position: static;
+                max-height: none;
             }
             
             .community-grid {
                 grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-                max-height: 65%;
             }
             
             .private-controls {
@@ -882,7 +886,6 @@
     let isMicOn = true;
     let isCameraOn = true;
     let incomingCallData = null;
-    let reconnectTimers = new Map();
     let keepAliveInterval = null;
 
     // ===== CONNEXION =====
@@ -964,6 +967,7 @@
         peer.on('call', (call) => {
             console.log('📞 Appel entrant de:', call.peer);
             
+            // Vérifier si c'est un appel privé ou communautaire
             if (!privateCall) {
                 const caller = onlineUsers.find(u => u.peerId === call.peer);
                 if (caller) {
@@ -975,6 +979,7 @@
                     document.getElementById('incomingCallModal').classList.add('active');
                 }
             } else {
+                // Appel communautaire
                 handleCommunityCall(call);
             }
         });
