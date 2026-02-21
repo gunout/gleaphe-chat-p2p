@@ -590,8 +590,8 @@
     let localStream = null;
     let currentUser = null;
     let onlineUsers = [];
-    let activeCalls = new Map(); // Map<peerId, call>
-    let userStreams = new Map(); // Map<peerId, stream>
+    let activeCalls = new Map();
+    let userStreams = new Map();
     let isMicOn = true;
     let isCameraOn = true;
 
@@ -667,7 +667,6 @@
         });
 
         peer.on('call', (call) => {
-            // Répondre automatiquement aux appels entrants
             console.log('📞 Appel entrant de:', call.peer);
             
             call.answer(localStream);
@@ -695,6 +694,7 @@
 
         socket.on('connect', () => {
             console.log('✅ Socket.IO connecté');
+            // Envoyer les informations de l'utilisateur au serveur
             socket.emit('user-connect', {
                 peerId: currentUser.peerId,
                 pseudo: currentUser.pseudo
@@ -702,76 +702,50 @@
         });
 
         socket.on('users-update', (users) => {
+            console.log('📊 Mise à jour des utilisateurs:', users);
+            
+            // Filtrer pour enlever soi-même
             const previousUsers = onlineUsers.map(u => u.peerId);
             onlineUsers = users.filter(u => u.peerId !== currentUser.peerId);
             
-            document.getElementById('onlineCount').innerText = onlineUsers.length + 1; // +1 pour soi-même
+            // Mettre à jour le compteur (soi-même + les autres)
+            document.getElementById('onlineCount').innerText = users.length;
             
             // Gérer les nouveaux utilisateurs
             onlineUsers.forEach(user => {
                 if (!previousUsers.includes(user.peerId)) {
                     console.log('🆕 Nouvel utilisateur:', user.pseudo);
+                    // Ajouter à la grille
+                    addUserToGrid(user);
                     // Appeler le nouvel utilisateur
-                    callUser(user.peerId);
+                    setTimeout(() => callUser(user.peerId), 1000);
                 }
             });
             
-            // Mettre à jour la grille
-            updateUsersGrid();
+            // Gérer les utilisateurs déconnectés
+            previousUsers.forEach(peerId => {
+                if (!onlineUsers.find(u => u.peerId === peerId)) {
+                    console.log('👋 Utilisateur parti:', peerId);
+                    removeUserFromGrid(peerId);
+                }
+            });
         });
 
         socket.on('global-message', (data) => {
             addGlobalMessage(data.pseudo, data.message, data.peerId === currentUser?.peerId);
         });
 
-        socket.on('user-disconnected', (peerId) => {
-            console.log('👋 Utilisateur déconnecté:', peerId);
-            
-            // Nettoyer les appels et streams
-            if (activeCalls.has(peerId)) {
-                activeCalls.get(peerId).close();
-                activeCalls.delete(peerId);
-            }
-            
-            if (userStreams.has(peerId)) {
-                userStreams.delete(peerId);
-            }
-            
-            // Retirer de la grille
-            const userCard = document.getElementById(`user-${peerId}`);
-            if (userCard) userCard.remove();
+        socket.on('disconnect', () => {
+            console.log('❌ Socket.IO déconnecté');
         });
     }
 
-    // ===== APPELER UN UTILISATEUR =====
-    function callUser(peerId) {
-        if (!peer || !localStream || activeCalls.has(peerId)) return;
-        
-        console.log('📞 Appel de:', peerId);
-        
-        const call = peer.call(peerId, localStream);
-        
-        call.on('stream', (remoteStream) => {
-            console.log('📹 Stream reçu de:', peerId);
-            userStreams.set(peerId, remoteStream);
-            updateUserVideo(peerId, remoteStream);
-        });
-        
-        activeCalls.set(peerId, call);
-    }
-
-    // ===== METTRE À JOUR LA VIDÉO D'UN UTILISATEUR =====
-    function updateUserVideo(peerId, stream) {
-        const videoElement = document.getElementById(`video-${peerId}`);
-        if (videoElement) {
-            videoElement.srcObject = stream;
-            videoElement.classList.remove('muted');
-        }
-    }
-
-    // ===== AJOUTER SA PROPRE CARTE =====
+    // ===== GESTION DE LA GRILLE =====
     function addSelfToGrid() {
         const grid = document.getElementById('usersGrid');
+        
+        // Vérifier si la carte existe déjà
+        if (document.getElementById(`user-${currentUser.peerId}`)) return;
         
         const card = document.createElement('div');
         card.className = 'user-card self';
@@ -783,7 +757,7 @@
                 <div class="user-info">
                     <div class="user-name">${currentUser.pseudo} (VOUS)</div>
                     <div class="user-status">
-                        <i class="fas fa-circle" style="font-size:0.4rem;"></i> EN LIGNE
+                        <i class="fas fa-circle" style="font-size:0.4rem; color:var(--online);"></i> EN LIGNE
                     </div>
                 </div>
             </div>
@@ -791,10 +765,10 @@
                 <video id="video-self" class="user-video" autoplay playsinline muted></video>
             </div>
             <div class="user-controls">
-                <div class="user-control-btn" onclick="toggleCamera()" id="selfCamBtn">
+                <div class="user-control-btn" onclick="toggleCamera()" id="selfCamBtn" title="Caméra">
                     <i class="fas fa-video"></i>
                 </div>
-                <div class="user-control-btn" onclick="toggleMic()" id="selfMicBtn">
+                <div class="user-control-btn" onclick="toggleMic()" id="selfMicBtn" title="Micro">
                     <i class="fas fa-microphone"></i>
                 </div>
             </div>
@@ -804,54 +778,114 @@
         
         // Ajouter le stream local
         const selfVideo = document.getElementById('video-self');
-        selfVideo.srcObject = localStream;
+        if (selfVideo && localStream) {
+            selfVideo.srcObject = localStream;
+        }
     }
 
-    // ===== METTRE À JOUR LA GRILLE DES UTILISATEURS =====
-    function updateUsersGrid() {
+    function addUserToGrid(user) {
         const grid = document.getElementById('usersGrid');
         
-        // Garder sa propre carte
-        const selfCard = document.getElementById(`user-${currentUser.peerId}`);
-        if (!selfCard) addSelfToGrid();
+        // Vérifier si la carte existe déjà
+        if (document.getElementById(`user-${user.peerId}`)) return;
         
-        // Ajouter ou mettre à jour les autres utilisateurs
-        onlineUsers.forEach(user => {
-            let userCard = document.getElementById(`user-${user.peerId}`);
+        console.log('➕ Ajout de', user.pseudo, 'à la grille');
+        
+        const card = document.createElement('div');
+        card.className = 'user-card';
+        card.id = `user-${user.peerId}`;
+        
+        card.innerHTML = `
+            <div class="user-card-header">
+                <div class="user-avatar">${user.pseudo.charAt(0).toUpperCase()}</div>
+                <div class="user-info">
+                    <div class="user-name">${user.pseudo}</div>
+                    <div class="user-status">
+                        <i class="fas fa-circle" style="font-size:0.4rem; color:var(--online);"></i> EN LIGNE
+                    </div>
+                </div>
+            </div>
+            <div class="user-video-container">
+                <video id="video-${user.peerId}" class="user-video muted" autoplay playsinline></video>
+                <div class="video-placeholder" id="placeholder-${user.peerId}" style="display: flex; position: absolute; top:0; left:0; width:100%; height:100%; background: #1a1a1a;">
+                    <i class="fas fa-video-slash"></i>
+                </div>
+            </div>
+            <div class="user-controls">
+                <div class="user-control-btn" onclick="toggleRemoteMic('${user.peerId}')" id="remoteMic-${user.peerId}" title="Couper le son">
+                    <i class="fas fa-microphone"></i>
+                </div>
+            </div>
+        `;
+        
+        grid.appendChild(card);
+    }
+
+    function removeUserFromGrid(peerId) {
+        const card = document.getElementById(`user-${peerId}`);
+        if (card) {
+            card.remove();
+        }
+        
+        // Nettoyer les appels et streams
+        if (activeCalls.has(peerId)) {
+            activeCalls.get(peerId).close();
+            activeCalls.delete(peerId);
+        }
+        
+        if (userStreams.has(peerId)) {
+            userStreams.delete(peerId);
+        }
+    }
+
+    // ===== APPELER UN UTILISATEUR =====
+    function callUser(peerId) {
+        if (!peer || !localStream || activeCalls.has(peerId)) return;
+        
+        console.log('📞 Appel de:', peerId);
+        
+        try {
+            const call = peer.call(peerId, localStream);
             
-            if (!userCard) {
-                userCard = document.createElement('div');
-                userCard.className = 'user-card';
-                userCard.id = `user-${user.peerId}`;
-                
-                userCard.innerHTML = `
-                    <div class="user-card-header">
-                        <div class="user-avatar">${user.pseudo.charAt(0).toUpperCase()}</div>
-                        <div class="user-info">
-                            <div class="user-name">${user.pseudo}</div>
-                            <div class="user-status">
-                                <i class="fas fa-circle" style="font-size:0.4rem;"></i> EN LIGNE
-                            </div>
-                        </div>
-                    </div>
-                    <div class="user-video-container">
-                        <video id="video-${user.peerId}" class="user-video muted" autoplay playsinline></video>
-                    </div>
-                    <div class="user-controls">
-                        <div class="user-control-btn" onclick="toggleRemoteMic('${user.peerId}')" id="remoteMic-${user.peerId}">
-                            <i class="fas fa-microphone"></i>
-                        </div>
-                    </div>
-                `;
-                
-                grid.appendChild(userCard);
-                
-                // Appeler l'utilisateur si pas déjà en appel
-                if (!activeCalls.has(user.peerId)) {
-                    callUser(user.peerId);
-                }
+            call.on('stream', (remoteStream) => {
+                console.log('📹 Stream reçu de:', peerId);
+                userStreams.set(peerId, remoteStream);
+                updateUserVideo(peerId, remoteStream);
+            });
+            
+            call.on('close', () => {
+                console.log('🔴 Appel fermé avec:', peerId);
+                activeCalls.delete(peerId);
+            });
+            
+            call.on('error', (err) => {
+                console.error('❌ Erreur d\'appel avec', peerId, ':', err);
+                activeCalls.delete(peerId);
+            });
+            
+            activeCalls.set(peerId, call);
+        } catch (err) {
+            console.error('❌ Erreur lors de l\'appel:', err);
+        }
+    }
+
+    // ===== METTRE À JOUR LA VIDÉO D'UN UTILISATEUR =====
+    function updateUserVideo(peerId, stream) {
+        const videoElement = document.getElementById(`video-${peerId}`);
+        const placeholder = document.getElementById(`placeholder-${peerId}`);
+        
+        if (videoElement) {
+            videoElement.srcObject = stream;
+            videoElement.classList.remove('muted');
+            
+            // Cacher le placeholder
+            if (placeholder) {
+                placeholder.style.display = 'none';
             }
-        });
+            
+            // Jouer la vidéo
+            videoElement.play().catch(e => console.log('Erreur play:', e));
+        }
     }
 
     // ===== CONTROLES =====
@@ -882,13 +916,14 @@
     }
 
     function toggleRemoteMic(peerId) {
-        // Cette fonction pourrait couper le son du stream distant
         const video = document.getElementById(`video-${peerId}`);
         if (video) {
             video.muted = !video.muted;
             const btn = document.getElementById(`remoteMic-${peerId}`);
             btn.innerHTML = video.muted ? '<i class="fas fa-microphone-slash"></i>' : '<i class="fas fa-microphone"></i>';
             btn.style.color = video.muted ? 'var(--neon-pink)' : '#fff';
+            
+            showNotification(video.muted ? 'Son coupé' : 'Son activé');
         }
     }
 
@@ -925,6 +960,11 @@
         
         chat.appendChild(msgDiv);
         chat.scrollTop = chat.scrollHeight;
+        
+        // Limiter le nombre de messages
+        if (chat.children.length > 50) {
+            chat.removeChild(chat.children[0]);
+        }
     }
 
     // ===== UTILS =====
@@ -956,6 +996,13 @@
             document.getElementById('loginPseudo').value = savedPseudo;
         }
     };
+
+    // Gestion de la touche Entrée dans le chat
+    document.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && document.getElementById('msgInput') === document.activeElement) {
+            sendGlobalMessage();
+        }
+    });
 </script>
 </body>
 </html>
