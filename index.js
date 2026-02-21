@@ -13,40 +13,31 @@ const io = socketIO(server, {
   transports: ['websocket', 'polling']
 });
 
-// Middleware pour logger les requêtes (optionnel)
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-  next();
-});
-
-// Servir les fichiers statiques du dossier public
+// Servir les fichiers statiques
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Route principale - sert index.html
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Stockage des utilisateurs connectés
 let onlineUsers = [];
-let waitingUsers = [];
-let callPairs = {};
 
 io.on('connection', (socket) => {
-  console.log('✅ Client connecté:', socket.id, 'IP:', socket.handshake.address);
+  console.log('✅ Client connecté:', socket.id);
 
   // ===== CONNEXION UTILISATEUR =====
   socket.on('user-connect', (userData) => {
-    console.log('👤 Utilisateur connecté:', userData.pseudo, 'PeerID:', userData.peerId);
+    console.log('👤 Utilisateur connecté:', userData.pseudo, userData.peerId);
     
     const user = {
       socketId: socket.id,
       peerId: userData.peerId,
       pseudo: userData.pseudo,
-      lastSeen: Date.now(),
-      searching: false
+      lastSeen: Date.now()
     };
     
+    // Éviter les doublons
     const existingIndex = onlineUsers.findIndex(u => u.peerId === userData.peerId);
     if (existingIndex !== -1) {
       onlineUsers[existingIndex] = user;
@@ -54,73 +45,28 @@ io.on('connection', (socket) => {
       onlineUsers.push(user);
     }
     
-    console.log('📊 Total en ligne:', onlineUsers.length);
+    // Envoyer la liste mise à jour à tous
     io.emit('users-update', onlineUsers);
   });
 
-  // ===== RECHERCHE DE PARTENAIRE =====
-  socket.on('start-search', (userData) => {
-    console.log('🔍 Recherche de partenaire pour:', userData.pseudo);
+  // ===== MESSAGE GLOBAL =====
+  socket.on('global-message', (data) => {
+    console.log(`💬 Message de ${data.pseudo}: ${data.message}`);
     
-    const user = onlineUsers.find(u => u.peerId === userData.peerId);
-    if (!user) return;
-    
-    user.searching = true;
-    
-    if (waitingUsers.length > 0) {
-      const partnerData = waitingUsers.shift();
-      const partner = onlineUsers.find(u => u.peerId === partnerData.peerId);
-      
-      if (partner) {
-        console.log('✅ Partenaire trouvé:', partner.pseudo, 'pour', user.pseudo);
-        
-        callPairs[user.peerId] = partner.peerId;
-        callPairs[partner.peerId] = user.peerId;
-        
-        io.to(user.socketId).emit('partner-found', {
-          peerId: partner.peerId,
-          pseudo: partner.pseudo
-        });
-        
-        io.to(partner.socketId).emit('partner-found', {
-          peerId: user.peerId,
-          pseudo: user.pseudo
-        });
-        
-        user.searching = false;
-        partner.searching = false;
-      } else {
-        waitingUsers.push({ peerId: user.peerId, socketId: user.socketId, pseudo: user.pseudo });
-      }
-    } else {
-      waitingUsers.push({ peerId: user.peerId, socketId: user.socketId, pseudo: user.pseudo });
-      console.log('⏳ Ajout à la file d\'attente, position:', waitingUsers.length);
-      socket.emit('search-started', { message: 'Recherche en cours...' });
-    }
+    // Diffuser à tous les utilisateurs
+    io.emit('global-message', {
+      peerId: data.peerId,
+      pseudo: data.pseudo,
+      message: data.message,
+      timestamp: Date.now()
+    });
   });
 
-  // ===== ARRÊT DE LA RECHERCHE =====
-  socket.on('stop-search', (userData) => {
-    console.log('⏹️ Arrêt de recherche pour:', userData.pseudo);
-    waitingUsers = waitingUsers.filter(u => u.peerId !== userData.peerId);
-    const user = onlineUsers.find(u => u.peerId === userData.peerId);
-    if (user) user.searching = false;
-  });
-
-  // ===== FIN D'APPEL =====
-  socket.on('end-call', (userData) => {
-    console.log('📞 Fin d\'appel pour:', userData.pseudo);
-    
-    const partnerId = callPairs[userData.peerId];
-    if (partnerId) {
-      const partner = onlineUsers.find(u => u.peerId === partnerId);
-      if (partner) {
-        io.to(partner.socketId).emit('call-ended', { message: 'Appel terminé' });
-      }
-      
-      delete callPairs[userData.peerId];
-      delete callPairs[partnerId];
-    }
+  // ===== POUR GARDER LA CONNEXION ACTIVE =====
+  socket.on('ping', () => {
+    const user = onlineUsers.find(u => u.socketId === socket.id);
+    if (user) user.lastSeen = Date.now();
+    socket.emit('pong');
   });
 
   // ===== DÉCONNEXION =====
@@ -132,42 +78,24 @@ io.on('connection', (socket) => {
     if (user) {
       console.log('👋 Utilisateur déconnecté:', user.pseudo);
       
-      waitingUsers = waitingUsers.filter(u => u.peerId !== user.peerId);
-      
-      const partnerId = callPairs[user.peerId];
-      if (partnerId) {
-        const partner = onlineUsers.find(u => u.peerId === partnerId);
-        if (partner) {
-          io.to(partner.socketId).emit('partner-disconnected', { message: 'Votre partenaire s\'est déconnecté' });
-        }
-        delete callPairs[user.peerId];
-        delete callPairs[partnerId];
-      }
+      // Notifier tous les autres que cet utilisateur s'est déconnecté
+      socket.broadcast.emit('user-disconnected', user.peerId);
     }
     
     onlineUsers = onlineUsers.filter(u => u.socketId !== socket.id);
+    
+    // Mettre à jour la liste pour tout le monde
     io.emit('users-update', onlineUsers);
   });
 });
 
-// ===== NETTOYAGE =====
+// ===== NETTOYAGE DES UTILISATEURS INACTIFS =====
 setInterval(() => {
   const now = Date.now();
   const before = onlineUsers.length;
   
+  // Supprimer les utilisateurs inactifs (plus de 30 secondes sans ping)
   onlineUsers = onlineUsers.filter(u => (now - u.lastSeen) < 30000);
-  
-  waitingUsers = waitingUsers.filter(u => {
-    const user = onlineUsers.find(ou => ou.peerId === u.peerId);
-    return user !== undefined;
-  });
-  
-  const activePeerIds = new Set(onlineUsers.map(u => u.peerId));
-  Object.keys(callPairs).forEach(peerId => {
-    if (!activePeerIds.has(peerId)) {
-      delete callPairs[peerId];
-    }
-  });
   
   if (onlineUsers.length !== before) {
     console.log(`🧹 Nettoyage: ${before - onlineUsers.length} inactifs retirés`);
@@ -175,37 +103,29 @@ setInterval(() => {
   }
 }, 10000);
 
-// ===== ROUTE DE STATUT POUR HEALTHCHECK =====
+// ===== ROUTE DE STATUT =====
 app.get('/status', (req, res) => {
   res.json({
     status: 'OK',
-    server: 'GLEAPHE CHAT SERVER',
+    server: 'GLEAPHE GROUP CHAT',
     online: onlineUsers.length,
-    waiting: waitingUsers.length,
-    calls: Object.keys(callPairs).length / 2,
+    users: onlineUsers.map(u => u.pseudo),
     uptime: process.uptime(),
     timestamp: new Date().toISOString()
   });
 });
 
-// ===== GESTION DES ERREURS =====
-app.use((err, req, res, next) => {
-  console.error('❌ Erreur:', err.stack);
-  res.status(500).send('Quelque chose s\'est mal passé!');
-});
-
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`
-  ╔═══════════════════════════════════════════════╗
-  ║     GLEAPHE CHAT SERVER v3.0                  ║
-  ║                                               ║
-  ║   🚀 Port: ${PORT}                               ║
-  ║   📡 Socket.IO: OK                             ║
-  ║   👥 File d'attente active                     ║
-  ║   🔌 WebRTC via PeerJS                         ║
-  ║   🌐 https://gleaphe-chat.up.railway.app       ║
-  ║   ⏰ ${new Date().toISOString()}                   ║
-  ╚═══════════════════════════════════════════════╝
+  ╔════════════════════════════════════════╗
+  ║     GLEAPHE GROUP CHAT v4.0            ║
+  ║                                        ║
+  ║   🚀 Port: ${PORT}                        ║
+  ║   📡 Socket.IO: OK                      ║
+  ║   👥 Mode: Groupe (tous visibles)       ║
+  ║   🔌 WebRTC Mesh Network                 ║
+  ║   🌐 ${req.headers.host || 'https://gleaphe-chat.up.railway.app'} ║
+  ╚════════════════════════════════════════╝
   `);
 });
