@@ -296,7 +296,7 @@
             overflow-y: auto;
         }
 
-        /* GRILLE COMMUNAUTAIRE */
+        /* GRILLE COMMUNAUTAIRE - SIMPLE AFFICHAGE SANS VIDÉO */
         .community-grid {
             flex: 2;
             padding: 10px;
@@ -311,11 +311,12 @@
             background: rgba(0, 0, 0, 0.7);
             border: 1px solid var(--neon-cyan);
             border-radius: 5px;
-            padding: 8px;
+            padding: 15px;
             position: relative;
             backdrop-filter: blur(5px);
             height: fit-content;
             transition: all 0.3s;
+            text-align: center;
         }
 
         .community-card.self {
@@ -323,16 +324,9 @@
             box-shadow: 0 0 10px var(--neon-pink);
         }
 
-        .community-card-header {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            margin-bottom: 5px;
-        }
-
         .community-avatar {
-            width: 30px;
-            height: 30px;
+            width: 60px;
+            height: 60px;
             background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
             border-radius: 50%;
             display: flex;
@@ -340,56 +334,20 @@
             justify-content: center;
             font-weight: bold;
             color: #000;
-            font-size: 0.8rem;
-        }
-
-        .community-info {
-            flex: 1;
+            font-size: 1.5rem;
+            margin: 0 auto 10px auto;
         }
 
         .community-name {
             font-family: var(--font-head);
             color: var(--neon-cyan);
-            font-size: 0.8rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            font-size: 1rem;
+            margin-bottom: 5px;
         }
 
         .community-status {
-            font-size: 0.5rem;
+            font-size: 0.7rem;
             color: var(--online);
-        }
-
-        .community-video-container {
-            width: 100%;
-            aspect-ratio: 4/3;
-            background: #1a1a1a;
-            border: 1px solid var(--neon-purple);
-            border-radius: 3px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .community-video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transform: scaleX(-1);
-        }
-
-        .video-placeholder {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(45deg, #333, #111);
-            color: var(--neon-pink);
-            font-size: 1.5rem;
         }
 
         /* ZONE D'APPEL PRIVÉ */
@@ -869,7 +827,7 @@
         </div>
 
         <div class="main-content">
-            <!-- GRILLE COMMUNAUTAIRE -->
+            <!-- GRILLE COMMUNAUTAIRE - SANS VIDÉO -->
             <div class="community-grid" id="communityGrid"></div>
 
             <!-- ZONE D'APPEL PRIVÉ -->
@@ -946,12 +904,10 @@
     let localStream = null;
     let currentUser = null;
     let onlineUsers = [];
-    let communityCalls = new Map(); // Pour les flux vidéo de la communauté
-    let privateCall = null; // Pour l'appel privé
+    let privateCall = null;
     let isMicOn = true;
     let isCameraOn = true;
     let incomingCallData = null;
-    let pingInterval = null;
 
     // ===== CONNEXION =====
     async function connect() {
@@ -1026,13 +982,12 @@
 
             addSelfToCommunity();
             connectToServer();
-            startPingInterval();
         });
 
         peer.on('call', (call) => {
             console.log('📞 Appel entrant de:', call.peer);
             
-            // Si pas d'appel privé en cours, c'est un appel privé entrant
+            // Uniquement pour les appels privés
             if (!privateCall) {
                 const caller = onlineUsers.find(u => u.peerId === call.peer);
                 if (caller) {
@@ -1043,52 +998,15 @@
                     `;
                     document.getElementById('incomingCallModal').classList.add('active');
                 }
-            } 
-            // Sinon c'est un appel pour le flux communautaire
-            else {
-                handleCommunityCall(call);
+            } else {
+                // Refuser tout autre appel
+                call.close();
             }
         });
 
         peer.on('error', (err) => {
             console.error('❌ Erreur PeerJS:', err);
         });
-    }
-
-    // ===== PING POUR GARDER LA CONNEXION =====
-    function startPingInterval() {
-        pingInterval = setInterval(() => {
-            if (socket && socket.connected) {
-                socket.emit('ping');
-            }
-        }, 10000); // Ping toutes les 10 secondes
-    }
-
-    // ===== GESTION DES APPELS COMMUNAUTAIRES =====
-    function handleCommunityCall(call) {
-        console.log('🌐 Flux communautaire de:', call.peer);
-        
-        call.answer(localStream);
-        
-        call.on('stream', (remoteStream) => {
-            console.log('📹 Flux communautaire reçu de:', call.peer);
-            
-            const video = document.getElementById(`community-video-${call.peer}`);
-            const placeholder = document.getElementById(`community-placeholder-${call.peer}`);
-            
-            if (video) {
-                video.srcObject = remoteStream;
-                video.play().catch(e => console.log('Erreur play:', e));
-                if (placeholder) placeholder.style.display = 'none';
-            }
-        });
-        
-        call.on('close', () => {
-            console.log('🔴 Flux communautaire fermé avec:', call.peer);
-            communityCalls.delete(call.peer);
-        });
-        
-        communityCalls.set(call.peer, call);
     }
 
     // ===== SOCKET.IO =====
@@ -1111,19 +1029,12 @@
         socket.on('users-update', (users) => {
             console.log('📊 Mise à jour des utilisateurs:', users.length);
             
-            const previousUsers = onlineUsers.map(u => u.peerId);
             onlineUsers = users.filter(u => u.peerId !== currentUser.peerId);
             
             document.getElementById('onlineCount').innerText = users.length;
             
             updateUsersList();
-            
-            // Ajouter les nouveaux utilisateurs à la grille communautaire
-            onlineUsers.forEach(user => {
-                if (!previousUsers.includes(user.peerId)) {
-                    addToCommunity(user);
-                }
-            });
+            updateCommunityGrid(users);
         });
 
         socket.on('global-message', (data) => {
@@ -1133,10 +1044,10 @@
         socket.on('user-disconnected', (peerId) => {
             console.log('👋 Utilisateur déconnecté:', peerId);
             removeFromCommunity(peerId);
-        });
-
-        socket.on('disconnect', () => {
-            console.log('❌ Socket.IO déconnecté, tentative de reconnexion...');
+            
+            if (privateCall && privateCall.peer === peerId) {
+                endPrivateCall();
+            }
         });
     }
 
@@ -1151,101 +1062,46 @@
         card.id = `community-${currentUser.peerId}`;
         
         card.innerHTML = `
-            <div class="community-card-header">
-                <div class="community-avatar">${currentUser.pseudo.charAt(0).toUpperCase()}</div>
-                <div class="community-info">
-                    <div class="community-name">${currentUser.pseudo} (VOUS)</div>
-                    <div class="community-status">EN LIGNE</div>
-                </div>
-            </div>
-            <div class="community-video-container">
-                <video id="community-self-video" class="community-video" autoplay playsinline muted></video>
-            </div>
+            <div class="community-avatar">${currentUser.pseudo.charAt(0).toUpperCase()}</div>
+            <div class="community-name">${currentUser.pseudo}</div>
+            <div class="community-status">(VOUS)</div>
         `;
         
         grid.appendChild(card);
-        
-        const selfVideo = document.getElementById('community-self-video');
-        if (selfVideo) {
-            selfVideo.srcObject = localStream;
-        }
     }
 
-    function addToCommunity(user) {
+    function updateCommunityGrid(users) {
         const grid = document.getElementById('communityGrid');
         
-        if (document.getElementById(`community-${user.peerId}`)) return;
+        // Garder sa propre carte
+        const selfCard = document.getElementById(`community-${currentUser.peerId}`);
+        if (!selfCard) addSelfToCommunity();
         
-        const card = document.createElement('div');
-        card.className = 'community-card';
-        card.id = `community-${user.peerId}`;
-        
-        card.innerHTML = `
-            <div class="community-card-header">
-                <div class="community-avatar">${user.pseudo.charAt(0).toUpperCase()}</div>
-                <div class="community-info">
+        // Ajouter ou mettre à jour les autres utilisateurs
+        users.forEach(user => {
+            if (user.peerId === currentUser.peerId) return;
+            
+            let card = document.getElementById(`community-${user.peerId}`);
+            
+            if (!card) {
+                card = document.createElement('div');
+                card.className = 'community-card';
+                card.id = `community-${user.peerId}`;
+                
+                card.innerHTML = `
+                    <div class="community-avatar">${user.pseudo.charAt(0).toUpperCase()}</div>
                     <div class="community-name">${user.pseudo}</div>
                     <div class="community-status">EN LIGNE</div>
-                </div>
-            </div>
-            <div class="community-video-container">
-                <video id="community-video-${user.peerId}" class="community-video" autoplay playsinline></video>
-                <div class="video-placeholder" id="community-placeholder-${user.peerId}">
-                    <i class="fas fa-video-slash"></i>
-                </div>
-            </div>
-        `;
-        
-        grid.appendChild(card);
-        
-        // Établir le flux communautaire uniquement pour les nouveaux utilisateurs
-        establishCommunityCall(user.peerId);
+                `;
+                
+                grid.appendChild(card);
+            }
+        });
     }
 
     function removeFromCommunity(peerId) {
         const card = document.getElementById(`community-${peerId}`);
         if (card) card.remove();
-        
-        if (communityCalls.has(peerId)) {
-            communityCalls.get(peerId).close();
-            communityCalls.delete(peerId);
-        }
-        
-        if (privateCall && privateCall.peer === peerId) {
-            endPrivateCall();
-        }
-    }
-
-    function establishCommunityCall(peerId) {
-        if (!peer || !localStream || communityCalls.has(peerId)) return;
-        
-        try {
-            console.log('🌐 Établissement flux communautaire vers:', peerId);
-            
-            const call = peer.call(peerId, localStream);
-            
-            call.on('stream', (remoteStream) => {
-                console.log('📹 Flux communautaire reçu de:', peerId);
-                
-                const video = document.getElementById(`community-video-${peerId}`);
-                const placeholder = document.getElementById(`community-placeholder-${peerId}`);
-                
-                if (video) {
-                    video.srcObject = remoteStream;
-                    video.play().catch(e => console.log('Erreur play:', e));
-                    if (placeholder) placeholder.style.display = 'none';
-                }
-            });
-            
-            call.on('close', () => {
-                console.log('🔴 Flux communautaire fermé avec:', peerId);
-                communityCalls.delete(peerId);
-            });
-            
-            communityCalls.set(peerId, call);
-        } catch (err) {
-            console.error('❌ Erreur flux communautaire:', err);
-        }
     }
 
     // ===== LISTE DES UTILISATEURS POUR APPELS PRIVÉS =====
@@ -1480,7 +1336,6 @@
 
     // Nettoyage à la fermeture
     window.addEventListener('beforeunload', () => {
-        if (pingInterval) clearInterval(pingInterval);
         if (socket) socket.disconnect();
         if (peer) peer.destroy();
     });
