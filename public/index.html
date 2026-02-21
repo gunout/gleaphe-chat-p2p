@@ -12,7 +12,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        /* Styles existants - je garde le même CSS que précédemment */
         :root {
             --bg-deep: #020205;
             --bg-hud: rgba(10, 20, 30, 0.85);
@@ -86,7 +85,7 @@
         #app {
             width: 100%; 
             height: 100%; 
-            max-width: 1200px;
+            max-width: 1400px;
             position: relative; 
             background: rgba(2, 2, 5, 0.8);
             overflow: hidden; 
@@ -287,12 +286,13 @@
             cursor: pointer;
         }
 
-        /* MAIN CONTENT */
+        /* MAIN CONTENT - CORRECTION DU LAYOUT */
         .main-content {
             display: flex;
             height: 100%;
-            padding-top: 60px;
-            padding-bottom: 200px;
+            padding-top: 100px; /* Espace pour la top bar */
+            padding-bottom: 200px; /* Espace pour le chat */
+            overflow: hidden;
         }
 
         /* GRILLE COMMUNAUTAIRE */
@@ -387,15 +387,16 @@
             font-size: 1.5rem;
         }
 
-        /* ZONE D'APPEL PRIVÉ */
+        /* ZONE D'APPEL PRIVÉ - CORRECTION */
         .private-call-area {
             flex: 1;
             border-left: 2px solid var(--neon-pink);
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.9);
             padding: 10px;
             display: flex;
             flex-direction: column;
             height: 100%;
+            min-width: 250px;
         }
 
         .private-call-header {
@@ -407,7 +408,7 @@
         }
 
         .private-videos {
-            flex: 1;
+            flex: 0 0 auto;
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -431,6 +432,7 @@
             aspect-ratio: 4/3;
             background: #000;
             border-radius: 3px;
+            overflow: hidden;
         }
 
         .private-video video {
@@ -440,53 +442,68 @@
             transform: scaleX(-1);
         }
 
+        /* CONTROLES PRIVÉS - TOUJOURS VISIBLES */
         .private-controls {
+            flex: 0 0 auto;
             display: flex;
-            gap: 10px;
+            gap: 5px;
             justify-content: center;
-            margin-top: 10px;
+            margin: 10px 0;
+            padding: 5px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 5px;
+            flex-wrap: wrap;
         }
 
         .private-btn {
-            padding: 8px;
+            padding: 8px 12px;
             background: rgba(0,0,0,0.5);
             border: 1px solid var(--neon-pink);
             color: #fff;
             border-radius: 3px;
             cursor: pointer;
             font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
         .private-btn:hover {
             background: var(--neon-pink);
         }
 
+        /* LISTE DES UTILISATEURS - SCROLLABLE */
         .users-list {
-            margin-top: 10px;
-            max-height: 150px;
+            flex: 1;
             overflow-y: auto;
+            margin-top: 10px;
+            border-top: 1px solid var(--neon-cyan);
+            padding-top: 10px;
+            min-height: 0; /* Important pour le scrolling */
         }
 
         .user-list-item {
             display: flex;
             align-items: center;
             gap: 5px;
-            padding: 5px;
+            padding: 8px;
             background: rgba(255,255,255,0.05);
-            margin-bottom: 2px;
+            margin-bottom: 4px;
             border-radius: 3px;
             cursor: pointer;
+            transition: 0.2s;
         }
 
         .user-list-item:hover {
-            background: rgba(0,243,255,0.1);
+            background: rgba(0,243,255,0.2);
         }
 
         .user-list-item.on-call {
             border-left: 3px solid var(--neon-pink);
+            background: rgba(255,0,85,0.1);
         }
 
-        /* CHAT GLOBAL */
+        /* CHAT GLOBAL - FIXÉ EN BAS */
         .global-chat {
             position: absolute;
             bottom: 0;
@@ -498,6 +515,7 @@
             padding: 10px;
             display: flex;
             flex-direction: column;
+            z-index: 30;
         }
 
         .chat-messages {
@@ -698,6 +716,7 @@
                     </div>
                 </div>
 
+                <!-- CONTROLES TOUJOURS VISIBLES -->
                 <div class="private-controls">
                     <button class="private-btn" onclick="toggleCamera()" id="privateCamBtn">
                         <i class="fas fa-video"></i> Caméra
@@ -710,6 +729,7 @@
                     </button>
                 </div>
 
+                <!-- LISTE DES UTILISATEURS -->
                 <div class="users-list" id="usersList">
                     <div style="color:#666; text-align:center; padding:10px;">
                         Chargement des utilisateurs...
@@ -748,11 +768,12 @@
     let localStream = null;
     let currentUser = null;
     let onlineUsers = [];
-    let communityStreams = new Map(); // Pour les flux de la communauté (mesh)
-    let privateCall = null; // Pour l'appel privé en cours
+    let communityCalls = new Map(); // Pour stocker les appels communautaires
+    let privateCall = null;
     let isMicOn = true;
     let isCameraOn = true;
     let incomingCallData = null;
+    let reconnectTimers = new Map(); // Pour gérer les reconnexions
 
     // ===== CONNEXION =====
     async function connect() {
@@ -834,22 +855,48 @@
         peer.on('call', (call) => {
             console.log('📞 Appel entrant de:', call.peer);
             
-            // Trouver l'utilisateur qui appelle
-            const caller = onlineUsers.find(u => u.peerId === call.peer);
-            
-            if (caller) {
-                incomingCallData = { call, caller };
-                document.getElementById('callerInfo').innerHTML = `
-                    <div style="font-size:1.2rem;">${caller.pseudo}</div>
-                    <div style="font-size:0.7rem; color:#888;">${call.peer}</div>
-                `;
-                document.getElementById('incomingCallModal').classList.add('active');
+            // Vérifier si c'est un appel privé ou communautaire
+            // On considère que c'est un appel privé si on n'est pas déjà en appel avec cette personne
+            if (!privateCall) {
+                const caller = onlineUsers.find(u => u.peerId === call.peer);
+                if (caller) {
+                    incomingCallData = { call, caller };
+                    document.getElementById('callerInfo').innerHTML = `
+                        <div style="font-size:1.2rem;">${caller.pseudo}</div>
+                        <div style="font-size:0.7rem; color:#888;">${call.peer}</div>
+                    `;
+                    document.getElementById('incomingCallModal').classList.add('active');
+                }
+            } else {
+                // C'est probablement un appel communautaire
+                handleCommunityCall(call);
             }
         });
 
         peer.on('error', (err) => {
             console.error('❌ Erreur PeerJS:', err);
         });
+    }
+
+    // ===== GESTION DES APPELS COMMUNAUTAIRES =====
+    function handleCommunityCall(call) {
+        console.log('🌐 Appel communautaire de:', call.peer);
+        
+        call.answer(localStream);
+        
+        call.on('stream', (remoteStream) => {
+            console.log('📹 Flux communautaire reçu de:', call.peer);
+            
+            const video = document.getElementById(`community-video-${call.peer}`);
+            const placeholder = document.getElementById(`community-placeholder-${call.peer}`);
+            
+            if (video) {
+                video.srcObject = remoteStream;
+                if (placeholder) placeholder.style.display = 'none';
+            }
+        });
+        
+        communityCalls.set(call.peer, call);
     }
 
     // ===== SOCKET.IO =====
@@ -875,11 +922,22 @@
             
             document.getElementById('onlineCount').innerText = users.length;
             
-            // Mettre à jour la liste des utilisateurs pour les appels privés
+            // Mettre à jour la liste des utilisateurs
             updateUsersList();
             
-            // Mettre à jour la grille communautaire
-            updateCommunityGrid(previousUsers);
+            // Gérer les nouveaux utilisateurs
+            onlineUsers.forEach(user => {
+                if (!previousUsers.includes(user.peerId)) {
+                    addToCommunity(user);
+                }
+            });
+
+            // Gérer les utilisateurs déconnectés
+            previousUsers.forEach(peerId => {
+                if (!onlineUsers.find(u => u.peerId === peerId)) {
+                    removeFromCommunity(peerId);
+                }
+            });
         });
 
         socket.on('global-message', (data) => {
@@ -888,15 +946,7 @@
 
         socket.on('user-disconnected', (peerId) => {
             console.log('👋 Utilisateur déconnecté:', peerId);
-            
-            // Retirer de la grille communautaire
-            const card = document.getElementById(`community-${peerId}`);
-            if (card) card.remove();
-            
-            // Si c'était l'utilisateur en appel privé, fermer l'appel
-            if (privateCall && privateCall.peer === peerId) {
-                endPrivateCall();
-            }
+            removeFromCommunity(peerId);
         });
     }
 
@@ -957,13 +1007,34 @@
         grid.appendChild(card);
         
         // Établir une connexion pour le flux communautaire
-        establishCommunityCall(user.peerId);
+        setTimeout(() => establishCommunityCall(user.peerId), 1000);
+    }
+
+    function removeFromCommunity(peerId) {
+        const card = document.getElementById(`community-${peerId}`);
+        if (card) card.remove();
+        
+        // Fermer l'appel communautaire
+        if (communityCalls.has(peerId)) {
+            communityCalls.get(peerId).close();
+            communityCalls.delete(peerId);
+        }
+        
+        // Si c'était l'utilisateur en appel privé
+        if (privateCall && privateCall.peer === peerId) {
+            endPrivateCall();
+        }
     }
 
     function establishCommunityCall(peerId) {
         if (!peer || !localStream) return;
         
+        // Vérifier si on a déjà un appel
+        if (communityCalls.has(peerId)) return;
+        
         try {
+            console.log('🌐 Établissement appel communautaire vers:', peerId);
+            
             const call = peer.call(peerId, localStream);
             
             call.on('stream', (remoteStream) => {
@@ -976,26 +1047,29 @@
                     video.srcObject = remoteStream;
                     if (placeholder) placeholder.style.display = 'none';
                 }
-                
-                communityStreams.set(peerId, remoteStream);
             });
             
-            communityStreams.set(peerId, call);
+            call.on('close', () => {
+                console.log('🔴 Appel communautaire fermé avec:', peerId);
+                communityCalls.delete(peerId);
+            });
+            
+            communityCalls.set(peerId, call);
         } catch (err) {
             console.error('❌ Erreur appel communautaire:', err);
+            
+            // Réessayer après un délai
+            if (!reconnectTimers.has(peerId)) {
+                const timer = setTimeout(() => {
+                    reconnectTimers.delete(peerId);
+                    establishCommunityCall(peerId);
+                }, 5000);
+                reconnectTimers.set(peerId, timer);
+            }
         }
     }
 
-    function updateCommunityGrid(previousUsers) {
-        // Ajouter les nouveaux utilisateurs
-        onlineUsers.forEach(user => {
-            if (!previousUsers.includes(user.peerId)) {
-                addToCommunity(user);
-            }
-        });
-    }
-
-    // ===== LISTE DES UTILISATEURS POUR APPELS PRIVÉS =====
+    // ===== LISTE DES UTILISATEURS =====
     function updateUsersList() {
         const list = document.getElementById('usersList');
         
@@ -1042,7 +1116,14 @@
                     document.getElementById('remoteVideoLabel').innerHTML = `📞 ${pseudo}`;
                 }
                 
-                document.getElementById('endCallBtn').style.display = 'block';
+                document.getElementById('endCallBtn').style.display = 'flex';
+            });
+            
+            call.on('close', () => {
+                console.log('🔴 Appel privé terminé');
+                if (privateCall && privateCall.peer === peerId) {
+                    privateCall = null;
+                }
             });
             
             privateCall = { call, peer: peerId, pseudo };
@@ -1076,7 +1157,7 @@
                     document.getElementById('remoteVideoLabel').innerHTML = `📞 ${caller.pseudo}`;
                 }
                 
-                document.getElementById('endCallBtn').style.display = 'block';
+                document.getElementById('endCallBtn').style.display = 'flex';
             });
             
             privateCall = { call, peer: caller.peerId, pseudo: caller.pseudo };
@@ -1169,6 +1250,11 @@
         
         chat.appendChild(msgDiv);
         chat.scrollTop = chat.scrollHeight;
+        
+        // Limiter le nombre de messages
+        while (chat.children.length > 50) {
+            chat.removeChild(chat.children[0]);
+        }
     }
 
     // ===== UTILS =====
@@ -1192,6 +1278,13 @@
         const now = new Date();
         document.getElementById('clock').innerText = now.toLocaleTimeString();
     }, 1000);
+
+    // Ping pour garder la connexion active
+    setInterval(() => {
+        if (socket && socket.connected) {
+            socket.emit('ping');
+        }
+    }, 5000);
 
     // Initialisation
     window.onload = () => {
