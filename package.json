@@ -1,13 +1,23 @@
 {
   "name": "gleaphe-chat",
   "version": "1.0.0",
-  "description": "Gleaphe Chat - Communication P2P",
+  "description": "Gleaphe Chat - Communication P2P avec WebRTC",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
   "dependencies": {
     "express": "^4.18.2",
     "socket.io": "^4.5.4"
-  }
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": "18.x"
+  },
+  "keywords": ["webrtc", "p2p", "chat", "video"],
+  "author": "GLEAPHE",
+  "license": "MIT"
 }
