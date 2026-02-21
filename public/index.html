@@ -286,13 +286,13 @@
             cursor: pointer;
         }
 
-        /* MAIN CONTENT - SCROLLABLE */
+        /* MAIN CONTENT */
         .main-content {
             display: flex;
             height: 100%;
             padding-top: 100px;
             padding-bottom: 160px;
-            overflow-y: auto; /* Permet le scroll */
+            overflow-y: auto;
         }
 
         /* GRILLE COMMUNAUTAIRE */
@@ -391,7 +391,7 @@
             font-size: 1.5rem;
         }
 
-        /* ZONE D'APPEL PRIVÉ - SÉPARÉE */
+        /* ZONE D'APPEL PRIVÉ */
         .private-call-area {
             flex: 1;
             border-left: 2px solid var(--neon-pink);
@@ -498,7 +498,6 @@
             font-size: 1.1rem;
         }
 
-        /* Bouton Raccrocher */
         .end-call-btn {
             border-color: #ff0000;
             background: rgba(255,0,0,0.2);
@@ -649,51 +648,6 @@
             transform: scale(1.05);
         }
 
-        /* MODE MOBILE */
-        @media (max-width: 768px) {
-            .main-content {
-                flex-direction: column;
-                padding-bottom: 140px;
-                overflow-y: auto;
-            }
-            
-            .private-call-area {
-                border-left: none;
-                border-top: 2px solid var(--neon-pink);
-                min-width: 100%;
-                position: static;
-                max-height: none;
-            }
-            
-            .community-grid {
-                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            }
-            
-            .private-controls {
-                padding: 10px 5px;
-                gap: 5px;
-            }
-            
-            .private-btn {
-                padding: 10px 8px;
-                min-width: 70px;
-                font-size: 0.7rem;
-            }
-            
-            .private-btn i {
-                font-size: 0.9rem;
-            }
-            
-            .global-chat {
-                height: 130px;
-            }
-            
-            .my-id-container {
-                top: 60px;
-                font-size: 0.5rem;
-            }
-        }
-
         /* NOTIFICATIONS */
         .notification {
             position: fixed;
@@ -755,6 +709,131 @@
         .modal-btn.reject {
             background: var(--neon-pink);
             color: #fff;
+        }
+
+        /* ===== VERSION MOBILE ===== */
+        @media (max-width: 768px) {
+            /* Ajustement des espacements */
+            .main-content {
+                flex-direction: column;
+                padding-top: 80px;
+                padding-bottom: 140px;
+                overflow-y: auto;
+            }
+
+            /* Grille communautaire en premier */
+            .community-grid {
+                order: 1;
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                gap: 8px;
+                padding: 8px;
+            }
+
+            /* Zone d'appel privé en second */
+            .private-call-area {
+                order: 2;
+                border-left: none;
+                border-top: 2px solid var(--neon-pink);
+                min-width: 100%;
+                position: relative;
+                top: 0;
+                max-height: none;
+                margin-top: 10px;
+                border-radius: 10px 10px 0 0;
+            }
+
+            /* Vidéo plus petites sur mobile */
+            .private-video {
+                max-width: 100%;
+            }
+
+            /* Boutons plus compacts */
+            .private-controls {
+                padding: 10px 5px;
+                gap: 5px;
+            }
+
+            .private-btn {
+                padding: 8px 10px;
+                min-width: 70px;
+                font-size: 0.7rem;
+            }
+
+            .private-btn i {
+                font-size: 0.9rem;
+            }
+
+            /* Chat moins haut */
+            .global-chat {
+                height: 130px;
+            }
+
+            /* ID plus petit */
+            .my-id-container {
+                top: 60px;
+                font-size: 0.5rem;
+                padding: 3px 8px;
+            }
+
+            /* Messages plus petits */
+            .chat-message {
+                font-size: 0.7rem;
+                padding: 3px 6px;
+            }
+
+            .chat-input {
+                font-size: 0.7rem;
+            }
+
+            /* Liste des utilisateurs plus petite */
+            .users-list {
+                max-height: 150px;
+            }
+
+            .user-list-item {
+                padding: 8px;
+                font-size: 0.75rem;
+            }
+        }
+
+        /* Très petits écrans */
+        @media (max-width: 480px) {
+            .community-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+
+            .private-btn {
+                padding: 6px 8px;
+                min-width: 60px;
+                font-size: 0.65rem;
+            }
+
+            .brand {
+                font-size: 0.9rem;
+            }
+
+            .status-line {
+                font-size: 0.5rem;
+            }
+        }
+
+        /* Mode paysage sur mobile */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .main-content {
+                padding-bottom: 120px;
+            }
+
+            .community-grid {
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            }
+
+            .private-call-area {
+                margin-top: 5px;
+            }
+
+            .global-chat {
+                height: 100px;
+            }
         }
     </style>
 </head>
@@ -956,7 +1035,6 @@
                 privateLocalVideo.srcObject = localStream;
             }
 
-            // Initialiser le bouton raccrocher
             document.getElementById('endCallBtn').classList.add('disabled');
 
             addSelfToCommunity();
@@ -967,7 +1045,6 @@
         peer.on('call', (call) => {
             console.log('📞 Appel entrant de:', call.peer);
             
-            // Vérifier si c'est un appel privé ou communautaire
             if (!privateCall) {
                 const caller = onlineUsers.find(u => u.peerId === call.peer);
                 if (caller) {
@@ -979,7 +1056,6 @@
                     document.getElementById('incomingCallModal').classList.add('active');
                 }
             } else {
-                // Appel communautaire
                 handleCommunityCall(call);
             }
         });
