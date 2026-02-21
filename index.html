@@ -7,12 +7,13 @@
     
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-    <!-- PeerJS est commenté car non utilisé -->
-    <!-- <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script> -->
+    <!-- PeerJS pour WebRTC -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
+        /* [Garder le style existant inchangé] */
         /* --- CORE VARIABLES --- */
         :root {
             --bg-deep: #020205;
@@ -795,6 +796,26 @@
             pointer-events: none;
             animation: floatUp 1s ease-out forwards;
         }
+
+        .incoming-call-modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            background: rgba(0,0,0,0.95);
+            border: 2px solid var(--neon-cyan);
+            padding: 20px;
+            z-index: 400;
+            text-align: center;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 10px var(--neon-cyan); }
+            50% { box-shadow: 0 0 30px var(--neon-cyan); }
+            100% { box-shadow: 0 0 10px var(--neon-cyan); }
+        }
     </style>
 </head>
 <body>
@@ -880,6 +901,15 @@
         <button class="btn-modal btn-confirm" onclick="UI.closeModal('modalPermissionError')" style="width:100%; padding:10px;">OK</button>
     </div>
 
+    <div class="modal hidden" id="modalIncomingCall">
+        <h3 style="color:var(--neon-cyan);">📞 APPEL ENTRANT</h3>
+        <div id="incomingCallerInfo" style="margin:20px; font-size:1.2rem;"></div>
+        <div style="display:flex; gap:20px; justify-content:center;">
+            <button onclick="answerCall(true)" style="background:green; color:white; padding:10px 20px; border:none; cursor:pointer;">RÉPONDRE</button>
+            <button onclick="answerCall(false)" style="background:red; color:white; padding:10px 20px; border:none; cursor:pointer;">REFUSER</button>
+        </div>
+    </div>
+
     <!-- === VUE 2: MAIN APP === -->
     <div id="view-main" class="view">
         
@@ -960,11 +990,15 @@
 <script>
     // ===== CONFIGURATION =====
     let socket = null;
+    let peer = null;
     let localStream = null;
     let currentUser = null;
     let onlineUsers = [];
     let isMicOn = true;
     let isCameraOn = true;
+    let currentCall = null;
+    let currentPartner = null;
+    let incomingCall = null;
 
     // ===== CONNEXION =====
     async function connect() {
@@ -987,17 +1021,44 @@
             document.getElementById('localVideo').srcObject = localStream;
             document.getElementById('permissionStatus').innerHTML = '✅ ACCÈS AUTORISÉ';
 
-            // Générer un ID local
-            const peerId = 'user-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now().toString(36);
+            // Initialiser PeerJS
+            initializePeer(pseudo);
+
+        } catch(e) {
+            console.error('Erreur caméra:', e);
+            document.getElementById('permissionStatus').innerHTML = '❌ ERREUR';
+            document.getElementById('modalPermissionError').classList.remove('hidden');
+        }
+    }
+
+    // ===== INITIALISATION PEERJS =====
+    function initializePeer(pseudo) {
+        // Générer un ID unique pour PeerJS
+        const peerId = 'peer-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now().toString(36);
+        
+        peer = new Peer(peerId, {
+            config: {
+                'iceServers': [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun3.l.google.com:19302' },
+                    { urls: 'stun:stun4.l.google.com:19302' }
+                ]
+            }
+        });
+
+        peer.on('open', (id) => {
+            console.log('✅ PeerJS connecté avec ID:', id);
             
             currentUser = {
-                peerId: peerId,
+                peerId: id,
                 pseudo: pseudo
             };
 
             // Mise à jour UI
             document.getElementById('sidebarMyName').innerText = pseudo;
-            document.getElementById('fullPeerId').innerText = peerId;
+            document.getElementById('fullPeerId').innerText = id;
             document.getElementById('p2pStatus').innerText = 'ONLINE';
             document.getElementById('p2pStatus').style.color = '#00ff00';
             document.getElementById('connectionStatus').innerText = 'CONNECTÉ';
@@ -1008,10 +1069,83 @@
 
             // Connexion Socket.IO
             connectToServer();
+        });
 
-        } catch(e) {
-            document.getElementById('permissionStatus').innerHTML = '❌ ERREUR';
-            document.getElementById('modalPermissionError').classList.remove('hidden');
+        peer.on('call', (call) => {
+            // Réception d'un appel
+            incomingCall = call;
+            
+            // Récupérer les infos de l'appelant
+            const callerId = call.peer;
+            const caller = onlineUsers.find(u => u.peerId === callerId);
+            
+            if (caller) {
+                document.getElementById('incomingCallerInfo').innerHTML = `
+                    <div>${caller.pseudo}</div>
+                    <div style="font-size:0.8rem; color:#888;">${callerId}</div>
+                `;
+            } else {
+                document.getElementById('incomingCallerInfo').innerHTML = callerId;
+            }
+            
+            document.getElementById('modalIncomingCall').classList.remove('hidden');
+        });
+
+        peer.on('error', (err) => {
+            console.error('Erreur PeerJS:', err);
+            showNotification('Erreur de connexion P2P');
+        });
+
+        peer.on('connection', (conn) => {
+            // Connexion de chat
+            conn.on('data', (data) => {
+                if (data.type === 'message') {
+                    addMessage(data.text, false);
+                }
+            });
+        });
+    }
+
+    // ===== RÉPONDRE À UN APPEL =====
+    function answerCall(accept) {
+        document.getElementById('modalIncomingCall').classList.add('hidden');
+        
+        if (accept && incomingCall && localStream) {
+            incomingCall.answer(localStream);
+            
+            incomingCall.on('stream', (remoteStream) => {
+                const remoteVideo = document.getElementById('remoteVideo');
+                remoteVideo.srcObject = remoteStream;
+                remoteVideo.classList.add('active');
+                
+                // Trouver l'appelant dans la liste des utilisateurs
+                const callerId = incomingCall.peer;
+                const caller = onlineUsers.find(u => u.peerId === callerId);
+                
+                if (caller) {
+                    currentPartner = caller;
+                    document.getElementById('matchName').innerText = caller.pseudo;
+                    document.getElementById('matchLoc').innerText = 'EN LIGNE';
+                    document.getElementById('profileCard').classList.add('show');
+                    
+                    // Mettre à jour le bouton principal
+                    document.getElementById('btnMainText').innerText = 'STOP';
+                    document.getElementById('btnMain').querySelector('i').className = 'fas fa-stop';
+                    document.getElementById('btnMain').style.background = 'radial-gradient(circle, #ff3333 0%, #990000 100%)';
+                    document.getElementById('p2pStatus').innerText = 'EN APPEL';
+                    document.getElementById('p2pStatus').style.color = '#ffaa00';
+                }
+            });
+            
+            currentCall = incomingCall;
+            incomingCall = null;
+            showNotification('Appel en cours');
+        } else {
+            // Refuser l'appel
+            if (incomingCall) {
+                incomingCall.close();
+            }
+            incomingCall = null;
         }
     }
 
@@ -1045,15 +1179,30 @@
         socket.on('partner-found', (data) => {
             console.log('🤝 Partenaire trouvé:', data);
             
-            // Mettre à jour l'UI
-            document.getElementById('btnMainText').innerText = 'STOP';
-            document.getElementById('btnMain').querySelector('i').className = 'fas fa-stop';
-            document.getElementById('btnMain').style.background = 'radial-gradient(circle, #ff3333 0%, #990000 100%)';
-            
-            // Afficher les infos du partenaire
-            document.getElementById('matchName').innerText = data.pseudo;
-            document.getElementById('matchLoc').innerText = 'EN LIGNE';
-            document.getElementById('profileCard').classList.add('show');
+            // Appeler le partenaire via PeerJS
+            if (peer && localStream) {
+                const call = peer.call(data.peerId, localStream);
+                
+                call.on('stream', (remoteStream) => {
+                    const remoteVideo = document.getElementById('remoteVideo');
+                    remoteVideo.srcObject = remoteStream;
+                    remoteVideo.classList.add('active');
+                    
+                    currentPartner = data;
+                    document.getElementById('matchName').innerText = data.pseudo;
+                    document.getElementById('matchLoc').innerText = 'EN LIGNE';
+                    document.getElementById('profileCard').classList.add('show');
+                    
+                    // Mettre à jour le bouton principal
+                    document.getElementById('btnMainText').innerText = 'STOP';
+                    document.getElementById('btnMain').querySelector('i').className = 'fas fa-stop';
+                    document.getElementById('btnMain').style.background = 'radial-gradient(circle, #ff3333 0%, #990000 100%)';
+                    document.getElementById('p2pStatus').innerText = 'EN APPEL';
+                    document.getElementById('p2pStatus').style.color = '#ffaa00';
+                });
+                
+                currentCall = call;
+            }
             
             showNotification(`🤝 Connecté avec ${data.pseudo}`);
         });
@@ -1082,21 +1231,72 @@
             return;
         }
         list.innerHTML = onlineUsers.map(u => `
-            <div class="user-list-item">
+            <div class="user-list-item" onclick="callUser('${u.peerId}', '${u.pseudo}')">
                 <div class="user-status-dot"></div>
                 <div class="user-avatar-small">${u.pseudo.charAt(0).toUpperCase()}</div>
                 <div style="flex:1; font-size:0.65rem;">${u.pseudo}</div>
+                <div style="color:var(--neon-cyan); font-size:0.5rem;">
+                    <i class="fas fa-phone"></i>
+                </div>
             </div>
         `).join('');
     }
 
+    // ===== APPELER UN UTILISATEUR SPÉCIFIQUE =====
+    function callUser(peerId, pseudo) {
+        if (!peer || !localStream) return;
+        
+        if (currentCall) {
+            showNotification('Vous êtes déjà en appel');
+            return;
+        }
+        
+        const call = peer.call(peerId, localStream);
+        
+        call.on('stream', (remoteStream) => {
+            const remoteVideo = document.getElementById('remoteVideo');
+            remoteVideo.srcObject = remoteStream;
+            remoteVideo.classList.add('active');
+            
+            currentPartner = { peerId, pseudo };
+            document.getElementById('matchName').innerText = pseudo;
+            document.getElementById('matchLoc').innerText = 'EN LIGNE';
+            document.getElementById('profileCard').classList.add('show');
+            
+            // Mettre à jour le bouton principal
+            document.getElementById('btnMainText').innerText = 'STOP';
+            document.getElementById('btnMain').querySelector('i').className = 'fas fa-stop';
+            document.getElementById('btnMain').style.background = 'radial-gradient(circle, #ff3333 0%, #990000 100%)';
+            document.getElementById('p2pStatus').innerText = 'EN APPEL';
+            document.getElementById('p2pStatus').style.color = '#ffaa00';
+        });
+        
+        currentCall = call;
+        showNotification(`Appel en cours vers ${pseudo}...`);
+    }
+
     // ===== RÉINITIALISATION DE L'UI D'APPEL =====
     function resetCallUI() {
+        // Fermer l'appel en cours
+        if (currentCall) {
+            currentCall.close();
+            currentCall = null;
+        }
+        
+        // Nettoyer la vidéo distante
+        const remoteVideo = document.getElementById('remoteVideo');
+        if (remoteVideo.srcObject) {
+            remoteVideo.srcObject.getTracks().forEach(track => track.stop());
+            remoteVideo.srcObject = null;
+        }
+        remoteVideo.classList.remove('active');
+        
+        currentPartner = null;
+        
         document.getElementById('btnMainText').innerText = 'ATTENTE';
         document.getElementById('btnMain').querySelector('i').className = 'fas fa-hourglass-half';
         document.getElementById('btnMain').style.background = 'radial-gradient(circle, var(--neon-pink) 0%, #990033 100%)';
         document.getElementById('profileCard').classList.remove('show');
-        document.getElementById('remoteVideo').classList.remove('active');
         document.getElementById('p2pStatus').innerText = 'ONLINE';
         document.getElementById('p2pStatus').style.color = '#00ff00';
     }
@@ -1137,15 +1337,25 @@
         }
         // Si on est en mode "STOP", on raccroche
         else {
-            btnText.innerText = 'ATTENTE';
-            icon.className = 'fas fa-hourglass-half';
-            btnMain.style.background = 'radial-gradient(circle, var(--neon-pink) 0%, #990033 100%)';
-            
-            if (socket && currentUser) {
-                socket.emit('end-call', {
-                    peerId: currentUser.peerId,
-                    pseudo: currentUser.pseudo
-                });
+            if (currentCall) {
+                currentCall.close();
+                currentCall = null;
+                
+                // Nettoyer la vidéo distante
+                const remoteVideo = document.getElementById('remoteVideo');
+                if (remoteVideo.srcObject) {
+                    remoteVideo.srcObject.getTracks().forEach(track => track.stop());
+                    remoteVideo.srcObject = null;
+                }
+                remoteVideo.classList.remove('active');
+                
+                if (socket && currentUser && currentPartner) {
+                    socket.emit('end-call', {
+                        peerId: currentUser.peerId,
+                        partnerId: currentPartner.peerId,
+                        pseudo: currentUser.pseudo
+                    });
+                }
             }
             
             resetCallUI();
@@ -1198,6 +1408,16 @@
         const text = input.value.trim();
         if (text) {
             addMessage(text, true);
+            
+            // Envoyer le message via PeerJS si en appel
+            if (currentCall && currentCall.peerConnection) {
+                // Créer une connexion de données si elle n'existe pas
+                const conn = peer.connect(currentPartner.peerId);
+                conn.on('open', () => {
+                    conn.send({ type: 'message', text: text });
+                });
+            }
+            
             input.value = '';
             UI.toggleChat(false);
         }
@@ -1219,6 +1439,7 @@
         UI.closeModal('modalAddContact');
         document.getElementById('newContactName').value = '';
         document.getElementById('newContactId').value = '';
+        loadContacts();
         showNotification('Contact ajouté !');
     }
 
@@ -1275,8 +1496,9 @@
         notif.style.zIndex = '1000';
         notif.style.borderRadius = '5px';
         notif.style.animation = 'slideUp 0.3s';
+        notif.style.textAlign = 'center';
         notif.innerText = message;
-        document.getElementById('main-screen').appendChild(notif);
+        document.getElementById('view-main').appendChild(notif);
         setTimeout(() => notif.remove(), 3000);
     }
 
@@ -1320,7 +1542,7 @@
                 <div class="contact-avatar">${c.name.charAt(0).toUpperCase()}</div>
                 <div style="flex:1;">${c.name}</div>
                 <div class="contact-actions">
-                    <div class="contact-call-btn" onclick="alert('Appel à ${c.name}')">
+                    <div class="contact-call-btn" onclick="callUser('${c.id}', '${c.name}')">
                         <i class="fas fa-phone"></i>
                     </div>
                 </div>
