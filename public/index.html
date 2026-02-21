@@ -3,17 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>GLEAPHE CHAT | P2P GROUP</title>
+    <title>GLEAPHE CHAT | P2P COMMUNITY</title>
     
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-    <!-- PeerJS pour WebRTC -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        /* [Garder le même style que précédemment] */
+        /* Styles existants - je garde le même CSS que précédemment */
         :root {
             --bg-deep: #020205;
             --bg-hud: rgba(10, 20, 30, 0.85);
@@ -94,8 +93,6 @@
             box-shadow: 0 0 50px rgba(0, 243, 255, 0.1);
             border: 1px solid rgba(0, 243, 255, 0.2);
             z-index: 2;
-            display: flex;
-            flex-direction: column;
         }
 
         .view {
@@ -200,18 +197,20 @@
             text-align: center;
         }
 
-        /* MAIN APP - NOUVELLE MISE EN PAGE GROUPE */
-        #view-main {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-
+        /* TOP BAR */
         .top-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
             padding: 10px;
             padding-top: max(10px, var(--safe-area-top));
             background: linear-gradient(180deg, rgba(0,0,0,0.9), transparent);
             z-index: 100;
+            pointer-events: none;
+        }
+        .top-bar > * {
+            pointer-events: auto;
         }
 
         .status-line {
@@ -243,47 +242,95 @@
             gap: 3px;
         }
 
-        /* GRILLE DES UTILISATEURS */
-        .users-grid-container {
-            flex: 1;
+        .hud-corner {
+            position: absolute; 
+            width: 30px; 
+            height: 30px;
+            border: 2px solid var(--neon-cyan); 
+            z-index: 45; 
+            pointer-events: none;
+        }
+        .tl { top: 10px; left: 10px; border-right: 0; border-bottom: 0; }
+        .tr { top: 10px; right: 10px; border-left: 0; border-bottom: 0; }
+        .bl { bottom: 10px; left: 10px; border-right: 0; border-top: 0; }
+        .br { bottom: 10px; right: 10px; border-left: 0; border-top: 0; }
+
+        .scanline {
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 2px;
+            background: var(--neon-cyan); 
+            opacity: 0.5; 
+            z-index: 40;
+            animation: scan 4s linear infinite; 
+            pointer-events: none;
+        }
+        @keyframes scan { 
+            0% { top: 0%; opacity: 0; } 
+            10% { opacity: 1; } 
+            90% { opacity: 1; } 
+            100% { top: 100%; opacity: 0; } 
+        }
+
+        .my-id-container {
+            position: absolute;
+            top: 70px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            border: 1px solid var(--neon-cyan);
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 0.6rem;
+            z-index: 50;
+            cursor: pointer;
+        }
+
+        /* MAIN CONTENT */
+        .main-content {
+            display: flex;
+            height: 100%;
+            padding-top: 60px;
+            padding-bottom: 200px;
+        }
+
+        /* GRILLE COMMUNAUTAIRE */
+        .community-grid {
+            flex: 2;
             overflow-y: auto;
             padding: 10px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .users-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 15px;
-            padding: 10px;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            height: 100%;
         }
 
-        .user-card {
+        .community-card {
             background: rgba(0, 0, 0, 0.7);
             border: 1px solid var(--neon-cyan);
             border-radius: 5px;
-            padding: 10px;
+            padding: 8px;
             position: relative;
             backdrop-filter: blur(5px);
-            transition: all 0.3s;
+            height: fit-content;
         }
 
-        .user-card.self {
+        .community-card.self {
             border-color: var(--neon-pink);
-            box-shadow: 0 0 15px var(--neon-pink);
+            box-shadow: 0 0 10px var(--neon-pink);
         }
 
-        .user-card-header {
+        .community-card-header {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
+            gap: 5px;
+            margin-bottom: 5px;
         }
 
-        .user-avatar {
-            width: 40px;
-            height: 40px;
+        .community-avatar {
+            width: 30px;
+            height: 30px;
             background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
             border-radius: 50%;
             display: flex;
@@ -291,27 +338,25 @@
             justify-content: center;
             font-weight: bold;
             color: #000;
+            font-size: 0.8rem;
         }
 
-        .user-info {
+        .community-info {
             flex: 1;
         }
 
-        .user-name {
+        .community-name {
             font-family: var(--font-head);
             color: var(--neon-cyan);
-            font-size: 0.9rem;
+            font-size: 0.8rem;
         }
 
-        .user-status {
-            font-size: 0.6rem;
+        .community-status {
+            font-size: 0.5rem;
             color: var(--online);
-            display: flex;
-            align-items: center;
-            gap: 3px;
         }
 
-        .user-video-container {
+        .community-video-container {
             width: 100%;
             aspect-ratio: 4/3;
             background: #1a1a1a;
@@ -319,22 +364,19 @@
             border-radius: 3px;
             overflow: hidden;
             position: relative;
-            margin-bottom: 10px;
         }
 
-        .user-video {
+        .community-video {
             width: 100%;
             height: 100%;
             object-fit: cover;
             transform: scaleX(-1);
         }
 
-        .user-video.muted {
-            opacity: 0.5;
-            filter: grayscale(100%);
-        }
-
         .video-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
             display: flex;
@@ -342,40 +384,118 @@
             justify-content: center;
             background: linear-gradient(45deg, #333, #111);
             color: var(--neon-pink);
-            font-size: 2rem;
+            font-size: 1.5rem;
         }
 
-        .user-controls {
+        /* ZONE D'APPEL PRIVÉ */
+        .private-call-area {
+            flex: 1;
+            border-left: 2px solid var(--neon-pink);
+            background: rgba(0,0,0,0.8);
+            padding: 10px;
             display: flex;
-            gap: 5px;
-            justify-content: center;
+            flex-direction: column;
+            height: 100%;
         }
 
-        .user-control-btn {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
+        .private-call-header {
+            color: var(--neon-pink);
+            font-family: var(--font-head);
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .private-videos {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .private-video-container {
+            background: #1a1a1a;
+            border: 1px solid var(--neon-pink);
+            border-radius: 5px;
+            padding: 5px;
+        }
+
+        .private-video-label {
+            color: var(--neon-pink);
+            font-size: 0.6rem;
+            margin-bottom: 5px;
+        }
+
+        .private-video {
+            width: 100%;
+            aspect-ratio: 4/3;
+            background: #000;
+            border-radius: 3px;
+        }
+
+        .private-video video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+
+        .private-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .private-btn {
+            padding: 8px;
             background: rgba(0,0,0,0.5);
-            border: 1px solid var(--neon-cyan);
+            border: 1px solid var(--neon-pink);
             color: #fff;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.7rem;
+        }
+
+        .private-btn:hover {
+            background: var(--neon-pink);
+        }
+
+        .users-list {
+            margin-top: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .user-list-item {
             display: flex;
             align-items: center;
-            justify-content: center;
+            gap: 5px;
+            padding: 5px;
+            background: rgba(255,255,255,0.05);
+            margin-bottom: 2px;
+            border-radius: 3px;
             cursor: pointer;
-            font-size: 0.8rem;
         }
 
-        .user-control-btn.mic-off {
-            border-color: var(--neon-pink);
-            color: var(--neon-pink);
+        .user-list-item:hover {
+            background: rgba(0,243,255,0.1);
+        }
+
+        .user-list-item.on-call {
+            border-left: 3px solid var(--neon-pink);
         }
 
         /* CHAT GLOBAL */
         .global-chat {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 180px;
             border-top: 2px solid var(--neon-cyan);
-            background: rgba(0,0,0,0.9);
+            background: rgba(0,0,0,0.95);
             padding: 10px;
-            max-height: 200px;
             display: flex;
             flex-direction: column;
         }
@@ -416,10 +536,6 @@
             color: #666;
         }
 
-        .chat-message-text {
-            color: #fff;
-        }
-
         .chat-input-area {
             display: flex;
             gap: 10px;
@@ -451,54 +567,9 @@
             justify-content: center;
         }
 
-        .hud-corner {
-            position: absolute; 
-            width: 30px; 
-            height: 30px;
-            border: 2px solid var(--neon-cyan); 
-            z-index: 45; 
-            pointer-events: none;
-        }
-        .tl { top: 10px; left: 10px; border-right: 0; border-bottom: 0; }
-        .tr { top: 10px; right: 10px; border-left: 0; border-bottom: 0; }
-        .bl { bottom: 10px; left: 10px; border-right: 0; border-top: 0; }
-        .br { bottom: 10px; right: 10px; border-left: 0; border-top: 0; }
-
-        .scanline {
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 2px;
-            background: var(--neon-cyan); 
-            opacity: 0.5; 
-            z-index: 40;
-            animation: scan 4s linear infinite; 
-            pointer-events: none;
-        }
-        @keyframes scan { 
-            0% { top: 0%; opacity: 0; } 
-            10% { opacity: 1; } 
-            90% { opacity: 1; } 
-            100% { top: 100%; opacity: 0; } 
-        }
-
-        .my-id-container {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(0,0,0,0.7);
-            border: 1px solid var(--neon-cyan);
-            padding: 5px 10px;
-            border-radius: 3px;
-            font-size: 0.6rem;
-            z-index: 50;
-            cursor: pointer;
-        }
-
         .notification {
             position: fixed;
-            bottom: 20px;
+            bottom: 200px;
             right: 20px;
             background: #000;
             border: 1px solid var(--neon-cyan);
@@ -512,6 +583,48 @@
             from { transform: translateX(100%); }
             to { transform: translateX(0); }
         }
+
+        .modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 300px;
+            background: rgba(0,0,0,0.95);
+            border: 2px solid var(--neon-cyan);
+            padding: 20px;
+            z-index: 1000;
+            display: none;
+        }
+
+        .modal.active {
+            display: block;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            cursor: pointer;
+            font-family: var(--font-head);
+        }
+
+        .modal-btn.accept {
+            background: var(--neon-cyan);
+            color: #000;
+        }
+
+        .modal-btn.reject {
+            background: var(--neon-pink);
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -522,11 +635,7 @@
 
     <!-- LOGIN VIEW -->
     <div id="view-login" class="view active">
-        <div class="login-logo">GLEAPHE<br><span style="font-size:1rem; color:var(--neon-pink)">// GROUP CHAT</span></div>
-        <div style="color:var(--text-tech); margin-bottom:20px; font-size:0.8rem; text-align:center;">
-            [ WEBRTC P2P GROUP ]<br>
-            REJOINDRE LE CHAT
-        </div>
+        <div class="login-logo">GLEAPHE<br><span style="font-size:1rem; color:var(--neon-pink)">// COMMUNITY</span></div>
         <input type="text" id="loginPseudo" class="tech-input" placeholder="VOTRE PSEUDO..." autocomplete="off">
         
         <div class="permission-info" id="permissionStatus">
@@ -534,12 +643,8 @@
         </div>
         
         <button class="cyber-btn" onclick="connect()">
-            <i class="fas fa-video"></i> REJOINDRE LE GROUPE
+            <i class="fas fa-video"></i> REJOINDRE LA COMMUNAUTÉ
         </button>
-        
-        <div style="margin-top:20px; font-size:0.6rem; color:#666; text-align:center;">
-            🔒 Tous les utilisateurs se voient en grille
-        </div>
     </div>
 
     <!-- MAIN APP -->
@@ -552,34 +657,87 @@
 
         <div class="top-bar">
             <div class="status-line">
-                <span>P2P GROUP: <span id="p2pStatus" style="color:#00ff00">ONLINE</span></span>
+                <span>P2P: <span id="p2pStatus" style="color:#00ff00">ONLINE</span></span>
                 <span id="clock">00:00:00</span>
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div class="brand">GLEAPHE <span style="color:var(--neon-cyan)">GROUP</span></div>
+                <div class="brand">GLEAPHE <span style="color:var(--neon-cyan)">COMMUNITY</span></div>
                 <div class="online-badge">
                     <i class="fas fa-circle"></i> <span id="onlineCount">0</span> EN LIGNE
                 </div>
             </div>
         </div>
 
-        <div class="my-id-container" onclick="copyMyId()" title="Cliquez pour copier">
+        <div class="my-id-container" onclick="copyMyId()">
             <i class="fas fa-id-card"></i> <span id="myPeerId">...</span>
         </div>
 
-        <div class="users-grid-container">
-            <div class="users-grid" id="usersGrid"></div>
+        <div class="main-content">
+            <!-- GRILLE COMMUNAUTAIRE -->
+            <div class="community-grid" id="communityGrid"></div>
+
+            <!-- ZONE D'APPEL PRIVÉ -->
+            <div class="private-call-area" id="privateCallArea">
+                <div class="private-call-header">
+                    <i class="fas fa-phone"></i> APPEL PRIVÉ
+                </div>
+                
+                <div class="private-videos">
+                    <div class="private-video-container">
+                        <div class="private-video-label">VOUS</div>
+                        <div class="private-video">
+                            <video id="privateLocalVideo" autoplay playsinline muted></video>
+                        </div>
+                    </div>
+                    
+                    <div class="private-video-container" id="remoteVideoContainer" style="display: none;">
+                        <div class="private-video-label" id="remoteVideoLabel">PARTENAIRE</div>
+                        <div class="private-video">
+                            <video id="privateRemoteVideo" autoplay playsinline></video>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="private-controls">
+                    <button class="private-btn" onclick="toggleCamera()" id="privateCamBtn">
+                        <i class="fas fa-video"></i> Caméra
+                    </button>
+                    <button class="private-btn" onclick="toggleMic()" id="privateMicBtn">
+                        <i class="fas fa-microphone"></i> Micro
+                    </button>
+                    <button class="private-btn" onclick="endPrivateCall()" id="endCallBtn" style="display: none;">
+                        <i class="fas fa-phone-slash"></i> Raccrocher
+                    </button>
+                </div>
+
+                <div class="users-list" id="usersList">
+                    <div style="color:#666; text-align:center; padding:10px;">
+                        Chargement des utilisateurs...
+                    </div>
+                </div>
+            </div>
         </div>
 
+        <!-- CHAT GLOBAL -->
         <div class="global-chat">
             <div class="chat-messages" id="chatMessages"></div>
             <div class="chat-input-area">
-                <input type="text" class="chat-input" id="msgInput" placeholder="Message global..." autocomplete="off" onkeypress="if(event.key==='Enter') sendGlobalMessage()">
+                <input type="text" class="chat-input" id="msgInput" placeholder="Message global..." autocomplete="off">
                 <div class="btn-send" onclick="sendGlobalMessage()">
                     <i class="fas fa-paper-plane"></i>
                 </div>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- MODAL APPEL ENTRANT -->
+<div class="modal" id="incomingCallModal">
+    <h3 style="color:var(--neon-cyan); margin-bottom:10px;">📞 APPEL ENTRANT</h3>
+    <div id="callerInfo" style="text-align:center; margin:20px 0;"></div>
+    <div class="modal-buttons">
+        <button class="modal-btn accept" onclick="answerCall(true)">RÉPONDRE</button>
+        <button class="modal-btn reject" onclick="answerCall(false)">REFUSER</button>
     </div>
 </div>
 
@@ -590,10 +748,11 @@
     let localStream = null;
     let currentUser = null;
     let onlineUsers = [];
-    let activeCalls = new Map();
-    let userStreams = new Map();
+    let communityStreams = new Map(); // Pour les flux de la communauté (mesh)
+    let privateCall = null; // Pour l'appel privé en cours
     let isMicOn = true;
     let isCameraOn = true;
+    let incomingCallData = null;
 
     // ===== CONNEXION =====
     async function connect() {
@@ -659,8 +818,14 @@
             document.getElementById('view-login').classList.remove('active');
             document.getElementById('view-main').classList.add('active');
 
-            // Afficher sa propre vidéo
-            addSelfToGrid();
+            // Configurer les vidéos privées
+            const privateLocalVideo = document.getElementById('privateLocalVideo');
+            if (privateLocalVideo) {
+                privateLocalVideo.srcObject = localStream;
+            }
+
+            // Ajouter sa propre carte à la communauté
+            addSelfToCommunity();
 
             // Connexion Socket.IO
             connectToServer();
@@ -669,15 +834,17 @@
         peer.on('call', (call) => {
             console.log('📞 Appel entrant de:', call.peer);
             
-            call.answer(localStream);
+            // Trouver l'utilisateur qui appelle
+            const caller = onlineUsers.find(u => u.peerId === call.peer);
             
-            call.on('stream', (remoteStream) => {
-                console.log('📹 Stream reçu de:', call.peer);
-                userStreams.set(call.peer, remoteStream);
-                updateUserVideo(call.peer, remoteStream);
-            });
-            
-            activeCalls.set(call.peer, call);
+            if (caller) {
+                incomingCallData = { call, caller };
+                document.getElementById('callerInfo').innerHTML = `
+                    <div style="font-size:1.2rem;">${caller.pseudo}</div>
+                    <div style="font-size:0.7rem; color:#888;">${call.peer}</div>
+                `;
+                document.getElementById('incomingCallModal').classList.add('active');
+            }
         });
 
         peer.on('error', (err) => {
@@ -694,7 +861,6 @@
 
         socket.on('connect', () => {
             console.log('✅ Socket.IO connecté');
-            // Envoyer les informations de l'utilisateur au serveur
             socket.emit('user-connect', {
                 peerId: currentUser.peerId,
                 pseudo: currentUser.pseudo
@@ -702,189 +868,244 @@
         });
 
         socket.on('users-update', (users) => {
-            console.log('📊 Mise à jour des utilisateurs:', users);
+            console.log('📊 Mise à jour des utilisateurs:', users.length);
             
-            // Filtrer pour enlever soi-même
             const previousUsers = onlineUsers.map(u => u.peerId);
             onlineUsers = users.filter(u => u.peerId !== currentUser.peerId);
             
-            // Mettre à jour le compteur (soi-même + les autres)
             document.getElementById('onlineCount').innerText = users.length;
             
-            // Gérer les nouveaux utilisateurs
-            onlineUsers.forEach(user => {
-                if (!previousUsers.includes(user.peerId)) {
-                    console.log('🆕 Nouvel utilisateur:', user.pseudo);
-                    // Ajouter à la grille
-                    addUserToGrid(user);
-                    // Appeler le nouvel utilisateur
-                    setTimeout(() => callUser(user.peerId), 1000);
-                }
-            });
+            // Mettre à jour la liste des utilisateurs pour les appels privés
+            updateUsersList();
             
-            // Gérer les utilisateurs déconnectés
-            previousUsers.forEach(peerId => {
-                if (!onlineUsers.find(u => u.peerId === peerId)) {
-                    console.log('👋 Utilisateur parti:', peerId);
-                    removeUserFromGrid(peerId);
-                }
-            });
+            // Mettre à jour la grille communautaire
+            updateCommunityGrid(previousUsers);
         });
 
         socket.on('global-message', (data) => {
             addGlobalMessage(data.pseudo, data.message, data.peerId === currentUser?.peerId);
         });
 
-        socket.on('disconnect', () => {
-            console.log('❌ Socket.IO déconnecté');
+        socket.on('user-disconnected', (peerId) => {
+            console.log('👋 Utilisateur déconnecté:', peerId);
+            
+            // Retirer de la grille communautaire
+            const card = document.getElementById(`community-${peerId}`);
+            if (card) card.remove();
+            
+            // Si c'était l'utilisateur en appel privé, fermer l'appel
+            if (privateCall && privateCall.peer === peerId) {
+                endPrivateCall();
+            }
         });
     }
 
-    // ===== GESTION DE LA GRILLE =====
-    function addSelfToGrid() {
-        const grid = document.getElementById('usersGrid');
-        
-        // Vérifier si la carte existe déjà
-        if (document.getElementById(`user-${currentUser.peerId}`)) return;
+    // ===== GRILLE COMMUNAUTAIRE =====
+    function addSelfToCommunity() {
+        const grid = document.getElementById('communityGrid');
         
         const card = document.createElement('div');
-        card.className = 'user-card self';
-        card.id = `user-${currentUser.peerId}`;
+        card.className = 'community-card self';
+        card.id = `community-${currentUser.peerId}`;
         
         card.innerHTML = `
-            <div class="user-card-header">
-                <div class="user-avatar">${currentUser.pseudo.charAt(0).toUpperCase()}</div>
-                <div class="user-info">
-                    <div class="user-name">${currentUser.pseudo} (VOUS)</div>
-                    <div class="user-status">
-                        <i class="fas fa-circle" style="font-size:0.4rem; color:var(--online);"></i> EN LIGNE
-                    </div>
+            <div class="community-card-header">
+                <div class="community-avatar">${currentUser.pseudo.charAt(0).toUpperCase()}</div>
+                <div class="community-info">
+                    <div class="community-name">${currentUser.pseudo} (VOUS)</div>
+                    <div class="community-status">EN LIGNE</div>
                 </div>
             </div>
-            <div class="user-video-container">
-                <video id="video-self" class="user-video" autoplay playsinline muted></video>
-            </div>
-            <div class="user-controls">
-                <div class="user-control-btn" onclick="toggleCamera()" id="selfCamBtn" title="Caméra">
-                    <i class="fas fa-video"></i>
-                </div>
-                <div class="user-control-btn" onclick="toggleMic()" id="selfMicBtn" title="Micro">
-                    <i class="fas fa-microphone"></i>
-                </div>
+            <div class="community-video-container">
+                <video id="community-self-video" class="community-video" autoplay playsinline muted></video>
             </div>
         `;
         
         grid.appendChild(card);
         
-        // Ajouter le stream local
-        const selfVideo = document.getElementById('video-self');
-        if (selfVideo && localStream) {
+        const selfVideo = document.getElementById('community-self-video');
+        if (selfVideo) {
             selfVideo.srcObject = localStream;
         }
     }
 
-    function addUserToGrid(user) {
-        const grid = document.getElementById('usersGrid');
+    function addToCommunity(user) {
+        const grid = document.getElementById('communityGrid');
         
-        // Vérifier si la carte existe déjà
-        if (document.getElementById(`user-${user.peerId}`)) return;
-        
-        console.log('➕ Ajout de', user.pseudo, 'à la grille');
+        if (document.getElementById(`community-${user.peerId}`)) return;
         
         const card = document.createElement('div');
-        card.className = 'user-card';
-        card.id = `user-${user.peerId}`;
+        card.className = 'community-card';
+        card.id = `community-${user.peerId}`;
         
         card.innerHTML = `
-            <div class="user-card-header">
-                <div class="user-avatar">${user.pseudo.charAt(0).toUpperCase()}</div>
-                <div class="user-info">
-                    <div class="user-name">${user.pseudo}</div>
-                    <div class="user-status">
-                        <i class="fas fa-circle" style="font-size:0.4rem; color:var(--online);"></i> EN LIGNE
-                    </div>
+            <div class="community-card-header">
+                <div class="community-avatar">${user.pseudo.charAt(0).toUpperCase()}</div>
+                <div class="community-info">
+                    <div class="community-name">${user.pseudo}</div>
+                    <div class="community-status">EN LIGNE</div>
                 </div>
             </div>
-            <div class="user-video-container">
-                <video id="video-${user.peerId}" class="user-video muted" autoplay playsinline></video>
-                <div class="video-placeholder" id="placeholder-${user.peerId}" style="display: flex; position: absolute; top:0; left:0; width:100%; height:100%; background: #1a1a1a;">
+            <div class="community-video-container">
+                <video id="community-video-${user.peerId}" class="community-video" autoplay playsinline></video>
+                <div class="video-placeholder" id="community-placeholder-${user.peerId}">
                     <i class="fas fa-video-slash"></i>
-                </div>
-            </div>
-            <div class="user-controls">
-                <div class="user-control-btn" onclick="toggleRemoteMic('${user.peerId}')" id="remoteMic-${user.peerId}" title="Couper le son">
-                    <i class="fas fa-microphone"></i>
                 </div>
             </div>
         `;
         
         grid.appendChild(card);
+        
+        // Établir une connexion pour le flux communautaire
+        establishCommunityCall(user.peerId);
     }
 
-    function removeUserFromGrid(peerId) {
-        const card = document.getElementById(`user-${peerId}`);
-        if (card) {
-            card.remove();
-        }
-        
-        // Nettoyer les appels et streams
-        if (activeCalls.has(peerId)) {
-            activeCalls.get(peerId).close();
-            activeCalls.delete(peerId);
-        }
-        
-        if (userStreams.has(peerId)) {
-            userStreams.delete(peerId);
-        }
-    }
-
-    // ===== APPELER UN UTILISATEUR =====
-    function callUser(peerId) {
-        if (!peer || !localStream || activeCalls.has(peerId)) return;
-        
-        console.log('📞 Appel de:', peerId);
+    function establishCommunityCall(peerId) {
+        if (!peer || !localStream) return;
         
         try {
             const call = peer.call(peerId, localStream);
             
             call.on('stream', (remoteStream) => {
-                console.log('📹 Stream reçu de:', peerId);
-                userStreams.set(peerId, remoteStream);
-                updateUserVideo(peerId, remoteStream);
+                console.log('📹 Flux communautaire reçu de:', peerId);
+                
+                const video = document.getElementById(`community-video-${peerId}`);
+                const placeholder = document.getElementById(`community-placeholder-${peerId}`);
+                
+                if (video) {
+                    video.srcObject = remoteStream;
+                    if (placeholder) placeholder.style.display = 'none';
+                }
+                
+                communityStreams.set(peerId, remoteStream);
             });
             
-            call.on('close', () => {
-                console.log('🔴 Appel fermé avec:', peerId);
-                activeCalls.delete(peerId);
-            });
-            
-            call.on('error', (err) => {
-                console.error('❌ Erreur d\'appel avec', peerId, ':', err);
-                activeCalls.delete(peerId);
-            });
-            
-            activeCalls.set(peerId, call);
+            communityStreams.set(peerId, call);
         } catch (err) {
-            console.error('❌ Erreur lors de l\'appel:', err);
+            console.error('❌ Erreur appel communautaire:', err);
         }
     }
 
-    // ===== METTRE À JOUR LA VIDÉO D'UN UTILISATEUR =====
-    function updateUserVideo(peerId, stream) {
-        const videoElement = document.getElementById(`video-${peerId}`);
-        const placeholder = document.getElementById(`placeholder-${peerId}`);
+    function updateCommunityGrid(previousUsers) {
+        // Ajouter les nouveaux utilisateurs
+        onlineUsers.forEach(user => {
+            if (!previousUsers.includes(user.peerId)) {
+                addToCommunity(user);
+            }
+        });
+    }
+
+    // ===== LISTE DES UTILISATEURS POUR APPELS PRIVÉS =====
+    function updateUsersList() {
+        const list = document.getElementById('usersList');
         
-        if (videoElement) {
-            videoElement.srcObject = stream;
-            videoElement.classList.remove('muted');
+        if (onlineUsers.length === 0) {
+            list.innerHTML = '<div style="color:#666; text-align:center; padding:10px;">Aucun utilisateur en ligne</div>';
+            return;
+        }
+        
+        list.innerHTML = onlineUsers.map(user => `
+            <div class="user-list-item ${privateCall && privateCall.peer === user.peerId ? 'on-call' : ''}" 
+                 onclick="startPrivateCall('${user.peerId}', '${user.pseudo}')">
+                <div style="width:8px; height:8px; background:var(--online); border-radius:50%;"></div>
+                <div style="flex:1;">${user.pseudo}</div>
+                ${privateCall && privateCall.peer === user.peerId ? 
+                    '<i class="fas fa-phone" style="color:var(--neon-pink);"></i>' : 
+                    '<i class="fas fa-phone" style="color:var(--neon-cyan);"></i>'}
+            </div>
+        `).join('');
+    }
+
+    // ===== APPEL PRIVÉ =====
+    function startPrivateCall(peerId, pseudo) {
+        if (privateCall) {
+            showNotification('Vous êtes déjà en appel privé');
+            return;
+        }
+        
+        if (!peer || !localStream) return;
+        
+        console.log('📞 Appel privé vers:', pseudo);
+        
+        try {
+            const call = peer.call(peerId, localStream);
             
-            // Cacher le placeholder
-            if (placeholder) {
-                placeholder.style.display = 'none';
+            call.on('stream', (remoteStream) => {
+                console.log('📹 Flux privé reçu de:', peerId);
+                
+                const remoteVideo = document.getElementById('privateRemoteVideo');
+                const remoteContainer = document.getElementById('remoteVideoContainer');
+                
+                if (remoteVideo) {
+                    remoteVideo.srcObject = remoteStream;
+                    remoteContainer.style.display = 'block';
+                    document.getElementById('remoteVideoLabel').innerHTML = `📞 ${pseudo}`;
+                }
+                
+                document.getElementById('endCallBtn').style.display = 'block';
+            });
+            
+            privateCall = { call, peer: peerId, pseudo };
+            
+            showNotification(`Appel vers ${pseudo}...`);
+            updateUsersList();
+            
+        } catch (err) {
+            console.error('❌ Erreur appel privé:', err);
+            showNotification('Erreur lors de l\'appel');
+        }
+    }
+
+    function answerCall(accept) {
+        document.getElementById('incomingCallModal').classList.remove('active');
+        
+        if (accept && incomingCallData) {
+            const { call, caller } = incomingCallData;
+            
+            call.answer(localStream);
+            
+            call.on('stream', (remoteStream) => {
+                console.log('📹 Flux privé reçu de:', caller.peerId);
+                
+                const remoteVideo = document.getElementById('privateRemoteVideo');
+                const remoteContainer = document.getElementById('remoteVideoContainer');
+                
+                if (remoteVideo) {
+                    remoteVideo.srcObject = remoteStream;
+                    remoteContainer.style.display = 'block';
+                    document.getElementById('remoteVideoLabel').innerHTML = `📞 ${caller.pseudo}`;
+                }
+                
+                document.getElementById('endCallBtn').style.display = 'block';
+            });
+            
+            privateCall = { call, peer: caller.peerId, pseudo: caller.pseudo };
+            
+            showNotification(`En appel avec ${caller.pseudo}`);
+            updateUsersList();
+        }
+        
+        incomingCallData = null;
+    }
+
+    function endPrivateCall() {
+        if (privateCall) {
+            privateCall.call.close();
+            privateCall = null;
+            
+            const remoteContainer = document.getElementById('remoteVideoContainer');
+            const remoteVideo = document.getElementById('privateRemoteVideo');
+            
+            remoteContainer.style.display = 'none';
+            document.getElementById('endCallBtn').style.display = 'none';
+            
+            if (remoteVideo.srcObject) {
+                remoteVideo.srcObject.getTracks().forEach(track => track.stop());
+                remoteVideo.srcObject = null;
             }
             
-            // Jouer la vidéo
-            videoElement.play().catch(e => console.log('Erreur play:', e));
+            showNotification('Appel terminé');
+            updateUsersList();
         }
     }
 
@@ -894,8 +1115,8 @@
             isCameraOn = !isCameraOn;
             localStream.getVideoTracks().forEach(track => track.enabled = isCameraOn);
             
-            const btn = document.getElementById('selfCamBtn');
-            btn.innerHTML = isCameraOn ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
+            const btn = document.getElementById('privateCamBtn');
+            btn.innerHTML = isCameraOn ? '<i class="fas fa-video"></i> Caméra' : '<i class="fas fa-video-slash"></i> Caméra';
             btn.style.color = isCameraOn ? '#fff' : 'var(--neon-pink)';
             
             showNotification(isCameraOn ? 'Caméra activée' : 'Caméra désactivée');
@@ -907,23 +1128,11 @@
             isMicOn = !isMicOn;
             localStream.getAudioTracks().forEach(track => track.enabled = isMicOn);
             
-            const btn = document.getElementById('selfMicBtn');
-            btn.innerHTML = isMicOn ? '<i class="fas fa-microphone"></i>' : '<i class="fas fa-microphone-slash"></i>';
+            const btn = document.getElementById('privateMicBtn');
+            btn.innerHTML = isMicOn ? '<i class="fas fa-microphone"></i> Micro' : '<i class="fas fa-microphone-slash"></i> Micro';
             btn.style.color = isMicOn ? '#fff' : 'var(--neon-pink)';
             
             showNotification(isMicOn ? 'Micro activé' : 'Micro désactivé');
-        }
-    }
-
-    function toggleRemoteMic(peerId) {
-        const video = document.getElementById(`video-${peerId}`);
-        if (video) {
-            video.muted = !video.muted;
-            const btn = document.getElementById(`remoteMic-${peerId}`);
-            btn.innerHTML = video.muted ? '<i class="fas fa-microphone-slash"></i>' : '<i class="fas fa-microphone"></i>';
-            btn.style.color = video.muted ? 'var(--neon-pink)' : '#fff';
-            
-            showNotification(video.muted ? 'Son coupé' : 'Son activé');
         }
     }
 
@@ -960,11 +1169,6 @@
         
         chat.appendChild(msgDiv);
         chat.scrollTop = chat.scrollHeight;
-        
-        // Limiter le nombre de messages
-        if (chat.children.length > 50) {
-            chat.removeChild(chat.children[0]);
-        }
     }
 
     // ===== UTILS =====
@@ -997,7 +1201,7 @@
         }
     };
 
-    // Gestion de la touche Entrée dans le chat
+    // Gestion de la touche Entrée
     document.addEventListener('keypress', (e) => {
         if (e.key === 'Enter' && document.getElementById('msgInput') === document.activeElement) {
             sendGlobalMessage();
